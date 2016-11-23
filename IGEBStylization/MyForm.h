@@ -1,4 +1,6 @@
 #pragma once
+#include "OpenGLEventTrigger.h"
+#include "RenderPanel.h"
 
 namespace IGEBStylization {
 
@@ -21,6 +23,8 @@ namespace IGEBStylization {
 			//
 			//TODO:  在此加入建構函式程式碼
 			//
+			renderPanel = new RenderPanel;
+			gcnew OpenGLEventTrigger(panel1, timer1, renderPanel);
 		}
 
 	protected:
@@ -44,6 +48,7 @@ namespace IGEBStylization {
 		/// <summary>
 		/// 設計工具所需的變數。
 		/// </summary>
+		RenderPanel *renderPanel;
 
 
 #pragma region Windows Form Designer generated code
@@ -59,6 +64,10 @@ namespace IGEBStylization {
 			this->tableLayoutPanel1 = (gcnew System::Windows::Forms::TableLayoutPanel());
 			this->tableLayoutPanel1->SuspendLayout();
 			this->SuspendLayout();
+			// 
+			// timer1
+			// 
+			this->timer1->Enabled = true;
 			// 
 			// panel1
 			// 
