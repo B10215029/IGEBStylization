@@ -274,13 +274,13 @@ void writeTextureToFilePNG(const char* filePath, GLuint textureID)
 	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
 	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
 
-	color_type = (textureFormat == GL_RGB ? PNG_COLOR_TYPE_RGB : PNG_COLOR_TYPE_RGBA);
+	color_type = (textureFormat == GL_RGB8 ? PNG_COLOR_TYPE_RGB : PNG_COLOR_TYPE_RGBA);
 	row_pointers = (png_bytep*)malloc(sizeof(unsigned char*) * height);
-	row_pointers[height - 1] = (png_bytep)malloc(sizeof(unsigned char) * (textureFormat == GL_RGB ? 3 : 4) * width * height);
-	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, row_pointers[height - 1]);
+	row_pointers[height - 1] = (png_bytep)malloc(sizeof(unsigned char) * (textureFormat == GL_RGB8 ? 3 : 4) * width * height);
+	glGetTexImage(GL_TEXTURE_2D, 0, (textureFormat == GL_RGB8 ? GL_RGB : GL_RGBA), GL_UNSIGNED_BYTE, row_pointers[height - 1]);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	for (int y = 0; y<height; y++)
-		row_pointers[height - 1 - y] = row_pointers[height - 1] + (y * (textureFormat == GL_RGB ? 3 : 4) * width);
+		row_pointers[height - 1 - y] = row_pointers[height - 1] + (y * (textureFormat == GL_RGB8 ? 3 : 4) * width);
 
 	/* create file */
 	FILE *fp = fopen(filePath, "wb");
@@ -345,8 +345,8 @@ unsigned char* writeTextureToArray(GLuint textureID)
 	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
 	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
 
-	data = (unsigned char*)malloc(sizeof(unsigned char) * 4 * width * height);
-	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+	data = (unsigned char*)malloc(sizeof(unsigned char) * (textureFormat == GL_RGB8 ? 3 : 4) * width * height);
+	glGetTexImage(GL_TEXTURE_2D, 0, (textureFormat == GL_RGB8 ? GL_RGB : GL_RGBA), GL_UNSIGNED_BYTE, data);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	return data;
 }
