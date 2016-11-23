@@ -177,6 +177,18 @@ void RenderPanel::Display()
 
 void RenderPanel::MouseDown(int x, int y, int button)
 {
+	if (button == 1) {
+		BindGL();
+		writeTextureToFilePNG("exaColTex[0].png", exaColTex[0]);
+		writeTextureToFilePNG("exaColTex[1].png", exaColTex[1]);
+		writeTextureToFilePNG("exaColTex[2].png", exaColTex[2]);
+		writeTextureToFilePNG("exaColTex[3].png", exaColTex[3]);
+		writeTextureToFilePNG("tarColTex[0].png", tarColTex[0]);
+		writeTextureToFilePNG("tarColTex[1].png", tarColTex[1]);
+		writeTextureToFilePNG("tarColTex[2].png", tarColTex[2]);
+		writeTextureToFilePNG("tarColTex[3].png", tarColTex[3]);
+		ReleaseGL();
+	}
 	imgi = (imgi + 1) % 8;
 }
 
