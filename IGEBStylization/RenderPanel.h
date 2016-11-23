@@ -34,14 +34,23 @@ private:
 		GLuint StrengthLocation;
 		GLuint isBlinnLocation;
 	} drawSolid;
-	struct ShowResultProgram {
-		GLuint program;
-		GLuint textureLocation;
-	} showResult;
 	struct DrawTextureProgram {
 		GLuint program;
 		GLuint textureLocation;
 	} drawTexture;
+	struct ShowResultProgram {
+		GLuint program;
+		GLuint texture0Location;
+		GLuint texture1Location;
+		GLuint texture2Location;
+		GLuint texture3Location;
+		GLuint texture4Location;
+		GLuint texture5Location;
+		GLuint texture6Location;
+		GLuint texture7Location;
+		GLuint texture8Location;
+		GLuint texture9Location;
+	} showResult;
 	glm::mat4 modelMatrix;
 	glm::mat4 viewMatrix;
 	glm::mat4 projectionMatrix;
@@ -56,6 +65,7 @@ private:
 	GLuint tarDephTex;
 	GLuint exampleTexture;
 	GLuint resultTexture;
+	GLuint focusTexture;
 
 	void CalculateResult();
 

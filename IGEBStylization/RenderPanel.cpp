@@ -10,6 +10,7 @@ RenderPanel::RenderPanel()
 	modelMatrix = glm::rotate(modelMatrix, glm::radians(0.0f), glm::vec3(0, 1, 0));
 	viewMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -1));
 	projectionMatrix = glm::perspective(glm::radians(45.0f), (float)FBO_WIDTH / (float)FBO_HEIGHT, 0.1f, 100.0f);
+	focusTexture = 0;
 }
 
 RenderPanel::~RenderPanel()
@@ -35,6 +36,17 @@ void RenderPanel::Initialize()
 	drawSolid.isBlinnLocation = glGetUniformLocation(drawSolid.program, "isBlinn");
 	drawTexture.program = loadProgram("./shader/DrawTexture.vert", "./shader/DrawTexture.frag");
 	drawTexture.textureLocation = glGetUniformLocation(drawTexture.program, "image");
+	showResult.program = loadProgram("./shader/ShowResult.vert", "./shader/ShowResult.frag");
+	showResult.texture0Location = glGetUniformLocation(showResult.program, "tex0");
+	showResult.texture1Location = glGetUniformLocation(showResult.program, "tex1");
+	showResult.texture2Location = glGetUniformLocation(showResult.program, "tex2");
+	showResult.texture3Location = glGetUniformLocation(showResult.program, "tex3");
+	showResult.texture4Location = glGetUniformLocation(showResult.program, "tex4");
+	showResult.texture5Location = glGetUniformLocation(showResult.program, "tex5");
+	showResult.texture6Location = glGetUniformLocation(showResult.program, "tex6");
+	showResult.texture7Location = glGetUniformLocation(showResult.program, "tex7");
+	showResult.texture8Location = glGetUniformLocation(showResult.program, "tex8");
+	showResult.texture9Location = glGetUniformLocation(showResult.program, "tex9");
 
 	GLenum drawbuff[4] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
 	glGenFramebuffers(1, &exaFBO);
@@ -130,7 +142,7 @@ void RenderPanel::Reshape(int width, int height)
 {
 	glViewport(0, 0, width, height);
 }
-int imgi = 0;
+
 void RenderPanel::Display()
 {
 	glViewport(0, 0, FBO_WIDTH, FBO_HEIGHT);
@@ -166,25 +178,75 @@ void RenderPanel::Display()
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(0, 0, width, height);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glUseProgram(drawTexture.program);
-	glUseProgram(drawTexture.program);
-	glActiveTexture(GL_TEXTURE0);
-	glUniform1i(drawTexture.textureLocation, 0);
-	if (imgi < 4)
-		glBindTexture(GL_TEXTURE_2D, exaColTex[imgi]);
-	else if (imgi < 8)
-		glBindTexture(GL_TEXTURE_2D, tarColTex[imgi - 4]);
-	else if (imgi == 8)
+	if (focusTexture) {
+		glUseProgram(drawTexture.program);
+		glActiveTexture(GL_TEXTURE0);
+		glUniform1i(drawTexture.textureLocation, 0);
+		glBindTexture(GL_TEXTURE_2D, focusTexture);
+	}
+	else {
+		glUseProgram(showResult.program);
+		glUniform1i(showResult.texture0Location, 0);
+		glUniform1i(showResult.texture1Location, 1);
+		glUniform1i(showResult.texture2Location, 2);
+		glUniform1i(showResult.texture3Location, 3);
+		glUniform1i(showResult.texture4Location, 4);
+		glUniform1i(showResult.texture5Location, 5);
+		glUniform1i(showResult.texture6Location, 6);
+		glUniform1i(showResult.texture7Location, 7);
+		glUniform1i(showResult.texture8Location, 8);
+		glUniform1i(showResult.texture9Location, 9);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, exaColTex[0]);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, exaColTex[1]);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, exaColTex[2]);
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, exaColTex[3]);
+		glActiveTexture(GL_TEXTURE4);
+		glBindTexture(GL_TEXTURE_2D, tarColTex[0]);
+		glActiveTexture(GL_TEXTURE5);
+		glBindTexture(GL_TEXTURE_2D, tarColTex[1]);
+		glActiveTexture(GL_TEXTURE6);
+		glBindTexture(GL_TEXTURE_2D, tarColTex[2]);
+		glActiveTexture(GL_TEXTURE7);
+		glBindTexture(GL_TEXTURE_2D, tarColTex[3]);
+		glActiveTexture(GL_TEXTURE8);
 		glBindTexture(GL_TEXTURE_2D, exampleTexture);
-	else if (imgi == 9)
+		glActiveTexture(GL_TEXTURE9);
 		glBindTexture(GL_TEXTURE_2D, resultTexture);
+	}
 	glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 }
 
 void RenderPanel::MouseDown(int x, int y, int button)
 {
 	if (button == 0) {
-		imgi = (imgi + 1) % 10;
+		float tx = ((float)x / width) * 4;
+		float ty = (1 - (float)y / height) * 4;
+		if (tx > 0 && tx < 1 && ty >3 && ty < 4)
+			focusTexture = exaColTex[0];
+		if (tx > 1 && tx < 2 && ty >3 && ty < 4)
+			focusTexture = exaColTex[1];
+		if (tx > 2 && tx < 3 && ty >3 && ty < 4)
+			focusTexture = exaColTex[2];
+		if (tx > 3 && tx < 4 && ty >3 && ty < 4)
+			focusTexture = exaColTex[3];
+
+		if (tx > 0 && tx < 1 && ty >0 && ty < 1)
+			focusTexture = tarColTex[0];
+		if (tx > 1 && tx < 2 && ty >0 && ty < 1)
+			focusTexture = tarColTex[1];
+		if (tx > 2 && tx < 3 && ty >0 && ty < 1)
+			focusTexture = tarColTex[2];
+		if (tx > 3 && tx < 4 && ty >0 && ty < 1)
+			focusTexture = tarColTex[3];
+
+		if (tx > 0 && tx < 2 && ty >1 && ty < 3)
+			focusTexture = exampleTexture;
+		if (tx > 2 && tx < 4 && ty >1 && ty < 3)
+			focusTexture = resultTexture;
 	}
 	if (button == 1) {
 		BindGL();
@@ -207,7 +269,9 @@ void RenderPanel::MouseDown(int x, int y, int button)
 
 void RenderPanel::MouseUp(int x, int y, int button)
 {
-
+	if (button == 0) {
+		focusTexture = 0;
+	}
 }
 
 void RenderPanel::MouseMove(int x, int y)
