@@ -3,8 +3,8 @@
 #include "MyMesh.h"
 #include <GL\glew.h>
 #include <glm\glm.hpp>
-#define TEXTURE_WIDTH 300
-#define TEXTURE_HEIGHT 300
+#define FBO_WIDTH 300
+#define FBO_HEIGHT 300
 
 class RenderPanel : public OpenGLPanel
 {
@@ -27,12 +27,30 @@ private:
 		GLuint viewMatrixLocation;
 		GLuint projectionMatrixLocation;
 		GLuint colorLocation;
+		GLuint AmbientLocation;
+		GLuint LightColorLocation;
+		GLuint lightPosLocation;
+		GLuint viewPosLocation;
+		GLuint ShininessLocation;
+		GLuint StrengthLocation;
+		GLuint isBlinnLocation;
 	} drawSolid;
+	struct DrawTextureProgram {
+		GLuint program;
+		GLuint textureLocation;
+	} drawTexture;
 	glm::mat4 modelMatrix;
 	glm::mat4 viewMatrix;
 	glm::mat4 projectionMatrix;
 	MyMesh backgroundMesh;
 	MyMesh exampleMesh;
 	MyMesh targetMesh;
+	GLuint exaFBO;
+	GLuint exaColTex[4];
+	GLuint exaDephTex;
+	GLuint tarFBO;
+	GLuint tarColTex[4];
+	GLuint tarDephTex;
+
 
 };

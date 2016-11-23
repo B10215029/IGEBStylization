@@ -13,6 +13,10 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Shader">
+      <UniqueIdentifier>{a29c9b4a-58ec-4c8b-8991-78b4475514be}</UniqueIdentifier>
+      <Extensions>vert;frag;</Extensions>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MyForm.cpp">
@@ -56,5 +60,19 @@
     <ClInclude Include="ShaderUtility.h">
       <Filter>標頭檔</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shader\DrawMesh.vert">
+      <Filter>Shader</Filter>
+    </None>
+    <None Include="shader\DrawTexture.frag">
+      <Filter>Shader</Filter>
+    </None>
+    <None Include="shader\DrawTexture.vert">
+      <Filter>Shader</Filter>
+    </None>
+    <None Include="shader\DrawMesh.frag">
+      <Filter>Shader</Filter>
+    </None>
   </ItemGroup>
 </Project>
