@@ -162,6 +162,8 @@
     <None Include="shader\DrawMesh.vert" />
     <None Include="shader\DrawTexture.frag" />
     <None Include="shader\DrawTexture.vert" />
+    <None Include="shader\ShowResult.frag" />
+    <None Include="shader\ShowResult.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

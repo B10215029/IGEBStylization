@@ -74,5 +74,16 @@
     <None Include="shader\DrawMesh.frag">
       <Filter>Shader</Filter>
     </None>
+    <None Include="shader\ShowResult.frag">
+      <Filter>Shader</Filter>
+    </None>
+    <None Include="shader\ShowResult.vert">
+      <Filter>Shader</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="MyForm.resx">
+      <Filter>資源檔</Filter>
+    </EmbeddedResource>
   </ItemGroup>
 </Project>

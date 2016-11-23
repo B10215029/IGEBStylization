@@ -122,6 +122,8 @@ void RenderPanel::Initialize()
 	OpenMesh::IO::read_mesh(targetMesh, "mesh.obj");
 	targetMesh.update_normals();
 	targetMesh.invalid = true;
+
+	exampleTexture = loadTextureFromFilePNG("example.png");
 }
 
 void RenderPanel::Reshape(int width, int height)
@@ -170,14 +172,26 @@ void RenderPanel::Display()
 	glUniform1i(drawTexture.textureLocation, 0);
 	if (imgi < 4)
 		glBindTexture(GL_TEXTURE_2D, exaColTex[imgi]);
-	else
+	else if (imgi < 8)
 		glBindTexture(GL_TEXTURE_2D, tarColTex[imgi - 4]);
+	else if (imgi == 8)
+		glBindTexture(GL_TEXTURE_2D, exampleTexture);
+	else if (imgi == 9)
+		glBindTexture(GL_TEXTURE_2D, resultTexture);
 	glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 }
 
 void RenderPanel::MouseDown(int x, int y, int button)
 {
+	if (button == 0) {
+		imgi = (imgi + 1) % 10;
+	}
 	if (button == 1) {
+		BindGL();
+		CalculateResult();
+		ReleaseGL();
+	}
+	if (button == 2) {
 		BindGL();
 		writeTextureToFilePNG("exaColTex[0].png", exaColTex[0]);
 		writeTextureToFilePNG("exaColTex[1].png", exaColTex[1]);
@@ -189,7 +203,6 @@ void RenderPanel::MouseDown(int x, int y, int button)
 		writeTextureToFilePNG("tarColTex[3].png", tarColTex[3]);
 		ReleaseGL();
 	}
-	imgi = (imgi + 1) % 8;
 }
 
 void RenderPanel::MouseUp(int x, int y, int button)
@@ -205,4 +218,73 @@ void RenderPanel::MouseMove(int x, int y)
 void RenderPanel::MouseWheel(int x, int y, int delta)
 {
 
+}
+
+float ColorLength(unsigned char* d)
+{
+	return (d[0] / 255.0f) * (d[0] / 255.0f) + (d[1] / 255.0f) * (d[1] / 255.0f) + (d[2] / 255.0f) * (d[2] / 255.0f);
+}
+
+float VectorLength(float* v, int d)
+{
+	float r = 0;
+	for (int i = 0; i < d; i++) {
+		r += v[i] * v[i];
+	}
+	return r;
+}
+
+void RenderPanel::CalculateResult()
+{
+	unsigned char* ec[4];
+	unsigned char* tc[4];
+	unsigned char* e;
+	unsigned char* r = new unsigned char[FBO_WIDTH * FBO_HEIGHT * 3];
+	float* exampleFeature = new float[FBO_WIDTH * FBO_HEIGHT];
+	int exampleTextureFormat;
+	glBindTexture(GL_TEXTURE_2D, exampleTexture);
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &exampleTextureFormat);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	ec[0] = writeTextureToArray(exaColTex[0]);
+	ec[1] = writeTextureToArray(exaColTex[1]);
+	ec[2] = writeTextureToArray(exaColTex[2]);
+	ec[3] = writeTextureToArray(exaColTex[3]);
+	tc[0] = writeTextureToArray(tarColTex[0]);
+	tc[1] = writeTextureToArray(tarColTex[1]);
+	tc[2] = writeTextureToArray(tarColTex[2]);
+	tc[3] = writeTextureToArray(tarColTex[3]);
+	e = writeTextureToArray(exampleTexture);
+	for (int i = 0; i < FBO_WIDTH * FBO_HEIGHT; i++) {
+		float f[4];
+		f[0] = ColorLength(&ec[0][i * 3]);
+		f[1] = ColorLength(&ec[1][i * 3]);
+		f[2] = ColorLength(&ec[2][i * 3]);
+		f[3] = ColorLength(&ec[3][i * 3]);
+		exampleFeature[i] = VectorLength(f, 4);
+	}
+	for (int i = 0; i < FBO_WIDTH * FBO_HEIGHT; i++) {
+		if (i % 100 == 0) printf("%d\n", i);
+		float f[4], fl, minDis = FLT_MAX;
+		int minIndex;
+		f[0] = ColorLength(&tc[0][i * 3]);
+		f[1] = ColorLength(&tc[1][i * 3]);
+		f[2] = ColorLength(&tc[2][i * 3]);
+		f[3] = ColorLength(&tc[3][i * 3]);
+		fl = VectorLength(f, 4);
+		for (int j = 0; j < FBO_WIDTH * FBO_HEIGHT; j++) {
+			if (abs(exampleFeature[j] - fl) < minDis) {
+				minDis = abs(exampleFeature[j] - fl);
+				minIndex = j;
+			}
+		}
+		r[i * 3 + 0] = e[minIndex * (exampleTextureFormat == GL_RGB8 ? 3 : 4) + 0];
+		r[i * 3 + 1] = e[minIndex * (exampleTextureFormat == GL_RGB8 ? 3 : 4) + 1];
+		r[i * 3 + 2] = e[minIndex * (exampleTextureFormat == GL_RGB8 ? 3 : 4) + 2];
+	}
+	glGenTextures(1, &resultTexture);
+	glBindTexture(GL_TEXTURE_2D, resultTexture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, FBO_WIDTH, FBO_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, r);
+	glBindTexture(GL_TEXTURE_2D, 0);
 }

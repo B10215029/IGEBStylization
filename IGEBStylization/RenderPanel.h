@@ -3,8 +3,8 @@
 #include "MyMesh.h"
 #include <GL\glew.h>
 #include <glm\glm.hpp>
-#define FBO_WIDTH 300
-#define FBO_HEIGHT 300
+#define FBO_WIDTH 100
+#define FBO_HEIGHT 100
 
 class RenderPanel : public OpenGLPanel
 {
@@ -18,7 +18,6 @@ public:
 	void MouseUp(int x, int y, int button);
 	void MouseMove(int x, int y);
 	void MouseWheel(int x, int y, int delta);
-	void UpdateMeshBuffer();
 
 private:
 	struct DrawSolidProgram {
@@ -35,6 +34,10 @@ private:
 		GLuint StrengthLocation;
 		GLuint isBlinnLocation;
 	} drawSolid;
+	struct ShowResultProgram {
+		GLuint program;
+		GLuint textureLocation;
+	} showResult;
 	struct DrawTextureProgram {
 		GLuint program;
 		GLuint textureLocation;
@@ -51,6 +54,9 @@ private:
 	GLuint tarFBO;
 	GLuint tarColTex[4];
 	GLuint tarDephTex;
+	GLuint exampleTexture;
+	GLuint resultTexture;
 
+	void CalculateResult();
 
 };
