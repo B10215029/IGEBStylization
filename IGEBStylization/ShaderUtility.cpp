@@ -203,6 +203,7 @@ GLuint loadTextureFromFilePNG(const char* filePath)
 	png_infop info_ptr;
 	int number_of_passes;
 	png_bytep * row_pointers;
+	unsigned char* flip_pointers;
 
 	unsigned char header[8];    // 8 is the maximum size that can be checked
 	FILE *fp = fopen(filePath, "rb"); // open file and test for it being a png
@@ -231,6 +232,7 @@ GLuint loadTextureFromFilePNG(const char* filePath)
 	png_read_update_info(png_ptr, info_ptr);
 
 	/* read file */
+	int row_size = png_get_rowbytes(png_ptr, info_ptr) * sizeof(png_bytep);
 	if (setjmp(png_jmpbuf(png_ptr))) printf("[read_png_file] Error during read_image\n");
 	row_pointers = (png_bytep*)malloc(sizeof(png_bytep) * height);
 	row_pointers[0] = (png_byte*)malloc(png_get_rowbytes(png_ptr, info_ptr) * sizeof(png_bytep) * height);
@@ -239,19 +241,25 @@ GLuint loadTextureFromFilePNG(const char* filePath)
 	png_read_image(png_ptr, row_pointers);
 	fclose(fp);
 
+	flip_pointers = (unsigned char*)malloc(png_get_rowbytes(png_ptr, info_ptr) * sizeof(png_bytep) * height);
+	for (int i = 0; i < height; i++) {
+		memcpy(&flip_pointers[i * png_get_rowbytes(png_ptr, info_ptr)], row_pointers[(height - 1 - i)], png_get_rowbytes(png_ptr, info_ptr));
+	}
+
 	GLuint textureHandle;
 	glGenTextures(1, &textureHandle);
 	glBindTexture(GL_TEXTURE_2D, textureHandle);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	if (png_get_color_type(png_ptr, info_ptr) == PNG_COLOR_TYPE_RGB)
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, *row_pointers);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, flip_pointers);
 	if (png_get_color_type(png_ptr, info_ptr) == PNG_COLOR_TYPE_RGBA)
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, *row_pointers);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, flip_pointers);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	free(row_pointers[0]);
 	free(row_pointers);
+	free(flip_pointers);
 
 	return textureHandle;
 }

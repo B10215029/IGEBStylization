@@ -4,12 +4,14 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>
 
+int RenderPanel::fboSize = 300;
+
 RenderPanel::RenderPanel()
 {
 	modelMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(15.0f), glm::vec3(1, 0, 0));
 	modelMatrix = glm::rotate(modelMatrix, glm::radians(0.0f), glm::vec3(0, 1, 0));
 	viewMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -1));
-	projectionMatrix = glm::perspective(glm::radians(45.0f), (float)FBO_WIDTH / (float)FBO_HEIGHT, 0.1f, 100.0f);
+	projectionMatrix = glm::perspective(glm::radians(45.0f), (float)fboSize / (float)fboSize, 0.1f, 100.0f);
 	focusTexture = 0;
 }
 
@@ -54,32 +56,32 @@ void RenderPanel::Initialize()
 
 	glGenTextures(4, exaColTex);
 	glBindTexture(GL_TEXTURE_2D, exaColTex[0]);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, FBO_WIDTH, FBO_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, fboSize, fboSize, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, exaColTex[0], 0);
 
 	glBindTexture(GL_TEXTURE_2D, exaColTex[1]);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, FBO_WIDTH, FBO_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, fboSize, fboSize, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, exaColTex[1], 0);
 
 	glBindTexture(GL_TEXTURE_2D, exaColTex[2]);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, FBO_WIDTH, FBO_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, fboSize, fboSize, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, exaColTex[2], 0);
 
 	glBindTexture(GL_TEXTURE_2D, exaColTex[3]);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, FBO_WIDTH, FBO_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, fboSize, fboSize, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, exaColTex[3], 0);
 
 	glGenRenderbuffers(1, &exaDephTex);
 	glBindRenderbuffer(GL_RENDERBUFFER, exaDephTex);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, FBO_WIDTH, FBO_HEIGHT);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, fboSize, fboSize);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, exaDephTex);
 
 	glDrawBuffers(4, drawbuff);
@@ -91,32 +93,32 @@ void RenderPanel::Initialize()
 
 	glGenTextures(4, tarColTex);
 	glBindTexture(GL_TEXTURE_2D, tarColTex[0]);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, FBO_WIDTH, FBO_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, fboSize, fboSize, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tarColTex[0], 0);
 
 	glBindTexture(GL_TEXTURE_2D, tarColTex[1]);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, FBO_WIDTH, FBO_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, fboSize, fboSize, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, tarColTex[1], 0);
 
 	glBindTexture(GL_TEXTURE_2D, tarColTex[2]);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, FBO_WIDTH, FBO_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, fboSize, fboSize, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, tarColTex[2], 0);
 
 	glBindTexture(GL_TEXTURE_2D, tarColTex[3]);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, FBO_WIDTH, FBO_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, fboSize, fboSize, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, tarColTex[3], 0);
 
 	glGenRenderbuffers(1, &tarDephTex);
 	glBindRenderbuffer(GL_RENDERBUFFER, tarDephTex);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, FBO_WIDTH, FBO_HEIGHT);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, fboSize, fboSize);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, tarDephTex);
 
 	glDrawBuffers(4, drawbuff);
@@ -145,7 +147,7 @@ void RenderPanel::Reshape(int width, int height)
 
 void RenderPanel::Display()
 {
-	glViewport(0, 0, FBO_WIDTH, FBO_HEIGHT);
+	glViewport(0, 0, fboSize, fboSize);
 	glUseProgram(drawSolid.program);
 	glUniformMatrix4fv(drawSolid.modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(modelMatrix));
 	glUniformMatrix4fv(drawSolid.viewMatrixLocation, 1, GL_FALSE, glm::value_ptr(viewMatrix));
@@ -263,6 +265,7 @@ void RenderPanel::MouseDown(int x, int y, int button)
 		writeTextureToFilePNG("tarColTex[1].png", tarColTex[1]);
 		writeTextureToFilePNG("tarColTex[2].png", tarColTex[2]);
 		writeTextureToFilePNG("tarColTex[3].png", tarColTex[3]);
+		writeTextureToFilePNG("resultTexture.png", resultTexture);
 		ReleaseGL();
 	}
 }
@@ -303,8 +306,8 @@ void RenderPanel::CalculateResult()
 	unsigned char* ec[4];
 	unsigned char* tc[4];
 	unsigned char* e;
-	unsigned char* r = new unsigned char[FBO_WIDTH * FBO_HEIGHT * 3];
-	float* exampleFeature = new float[FBO_WIDTH * FBO_HEIGHT];
+	unsigned char* r = new unsigned char[fboSize * fboSize * 3];
+	float* exampleFeature = new float[fboSize * fboSize];
 	int exampleTextureFormat;
 	glBindTexture(GL_TEXTURE_2D, exampleTexture);
 	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &exampleTextureFormat);
@@ -318,7 +321,7 @@ void RenderPanel::CalculateResult()
 	tc[2] = writeTextureToArray(tarColTex[2]);
 	tc[3] = writeTextureToArray(tarColTex[3]);
 	e = writeTextureToArray(exampleTexture);
-	for (int i = 0; i < FBO_WIDTH * FBO_HEIGHT; i++) {
+	for (int i = 0; i < fboSize * fboSize; i++) {
 		float f[4];
 		f[0] = ColorLength(&ec[0][i * 3]);
 		f[1] = ColorLength(&ec[1][i * 3]);
@@ -326,7 +329,7 @@ void RenderPanel::CalculateResult()
 		f[3] = ColorLength(&ec[3][i * 3]);
 		exampleFeature[i] = VectorLength(f, 4);
 	}
-	for (int i = 0; i < FBO_WIDTH * FBO_HEIGHT; i++) {
+	for (int i = 0; i < fboSize * fboSize; i++) {
 		if (i % 100 == 0) printf("%d\n", i);
 		float f[4], fl, minDis = FLT_MAX;
 		int minIndex;
@@ -335,12 +338,13 @@ void RenderPanel::CalculateResult()
 		f[2] = ColorLength(&tc[2][i * 3]);
 		f[3] = ColorLength(&tc[3][i * 3]);
 		fl = VectorLength(f, 4);
-		for (int j = 0; j < FBO_WIDTH * FBO_HEIGHT; j++) {
+		for (int j = 0; j < fboSize * fboSize; j++) {
 			if (abs(exampleFeature[j] - fl) < minDis) {
 				minDis = abs(exampleFeature[j] - fl);
 				minIndex = j;
 			}
 		}
+		//if (i % 100 == 0) printf("%d, %lf\n", minIndex, minDis);
 		r[i * 3 + 0] = e[minIndex * (exampleTextureFormat == GL_RGB8 ? 3 : 4) + 0];
 		r[i * 3 + 1] = e[minIndex * (exampleTextureFormat == GL_RGB8 ? 3 : 4) + 1];
 		r[i * 3 + 2] = e[minIndex * (exampleTextureFormat == GL_RGB8 ? 3 : 4) + 2];
@@ -349,6 +353,36 @@ void RenderPanel::CalculateResult()
 	glBindTexture(GL_TEXTURE_2D, resultTexture);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, FBO_WIDTH, FBO_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, r);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, fboSize, fboSize, 0, GL_RGB, GL_UNSIGNED_BYTE, r);
 	glBindTexture(GL_TEXTURE_2D, 0);
+	delete[] r;
+	delete[] exampleFeature;
+	free(ec[0]);
+	free(ec[1]);
+	free(ec[2]);
+	free(ec[3]);
+	free(tc[0]);
+	free(tc[1]);
+	free(tc[2]);
+	free(tc[3]);
+	free(e);
+}
+
+void RenderPanel::LoadExampleModel(const char* fileName)
+{
+	OpenMesh::IO::read_mesh(exampleMesh, fileName);
+	exampleMesh.update_normals();
+	exampleMesh.invalid = true;
+}
+
+void RenderPanel::LoadTargetModel(const char* fileName)
+{
+	OpenMesh::IO::read_mesh(targetMesh, fileName);
+	targetMesh.update_normals();
+	targetMesh.invalid = true;
+}
+
+void RenderPanel::LoadExampleImage(const char* fileName)
+{
+	exampleTexture = loadTextureFromFilePNG(fileName);
 }

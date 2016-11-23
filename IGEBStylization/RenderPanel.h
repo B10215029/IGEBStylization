@@ -3,12 +3,12 @@
 #include "MyMesh.h"
 #include <GL\glew.h>
 #include <glm\glm.hpp>
-#define FBO_WIDTH 100
-#define FBO_HEIGHT 100
 
 class RenderPanel : public OpenGLPanel
 {
 public:
+	static int fboSize;
+
 	RenderPanel();
 	~RenderPanel();
 	void Initialize();
@@ -18,6 +18,9 @@ public:
 	void MouseUp(int x, int y, int button);
 	void MouseMove(int x, int y);
 	void MouseWheel(int x, int y, int delta);
+	void LoadExampleModel(const char* fileName);
+	void LoadTargetModel(const char* fileName);
+	void LoadExampleImage(const char* fileName);
 
 private:
 	struct DrawSolidProgram {
