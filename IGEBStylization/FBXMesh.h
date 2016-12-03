@@ -2,6 +2,7 @@
 #include <glm/glm.hpp>
 #include <fbxsdk/fbxsdk.h>
 #include <GL/glew.h>
+#include "MyMesh.h"
 
 class FBXMesh
 {
@@ -18,12 +19,17 @@ private:
 	GLuint vao, vbo, ebo;
 	FbxManager* lSdkManager;
 	FbxNode* lRootNode;
-	FbxMesh* mesh;
 	int lPolygonVertexCount;
 	int lPolygonCount;
 	int indicesCount;
 
-
+	void LoadNodeMesh(FbxNode* node, FbxAMatrix modelMatrix);
 	void UpdateMeshBuffer();
+
+	MyMesh myMesh;
+	double minSca;
+	glm::dvec3 maxP, minP, tra, sca;
+	std::vector<glm::dvec3> vertexData;
+	std::vector<GLuint> vertexIndices;
 
 };

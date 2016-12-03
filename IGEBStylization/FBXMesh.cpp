@@ -11,7 +11,7 @@ FBXMesh::FBXMesh()
 	FbxIOSettings *ios = FbxIOSettings::Create(lSdkManager, IOSROOT);
 	lSdkManager->SetIOSettings(ios);
 
-	mesh = NULL;
+	lRootNode = NULL;
 	vao = vbo = ebo = 0;
 	invalid = true;
 }
@@ -33,19 +33,6 @@ void FBXMesh::Render()
 	glDrawElements(GL_TRIANGLE_FAN, indicesCount, GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
 }
-
-//FbxMesh* GetMesh(FbxNode* node) {
-//	FbxMesh* mesh = node->GetMesh();
-//	if (mesh) {
-//		return mesh;
-//	}
-//	for (int i = 0; i < node->GetChildCount(); i++) {
-//		if (mesh = GetMesh(node->GetChild(i))) {
-//			return mesh;
-//		}
-//	}
-//	return NULL;
-//}
 
 void FBXMesh::ReadFile(const char* fileName)
 {
@@ -82,12 +69,7 @@ void FBXMesh::WriteFile(const char* fileName)
 	//OpenMesh::IO::write_mesh(*this, fileName);
 }
 
-double minSca;
-glm::dvec3 maxP, minP, tra, sca;
-std::vector<glm::dvec3> vertexData;
-std::vector<GLuint> vertexIndices;
-
-void LoadNodeMesh(FbxNode* node, FbxAMatrix modelMatrix) {
+void FBXMesh::LoadNodeMesh(FbxNode* node, FbxAMatrix modelMatrix) {
 	FbxMesh* mesh = node->GetMesh();
 	modelMatrix = modelMatrix * node->EvaluateLocalTransform();
 	//printf("%s%s\n", node->GetName(), mesh?"(mesh)":"");
@@ -127,6 +109,7 @@ void LoadNodeMesh(FbxNode* node, FbxAMatrix modelMatrix) {
 			lCurrentVertex  = matrixGeo.MultT(lCurrentVertex);
 			glm::dvec4 v(lCurrentVertex[0], lCurrentVertex[1], lCurrentVertex[2], 1);
 			vertexData.push_back(v);
+			myMesh.add_vertex(MyMesh::Point(glm::value_ptr(v)));
 			if (v.x > maxP.x) maxP.x = v.x;
 			if (v.y > maxP.y) maxP.y = v.y;
 			if (v.z > maxP.z) maxP.z = v.z;
@@ -148,12 +131,16 @@ void LoadNodeMesh(FbxNode* node, FbxAMatrix modelMatrix) {
 				vertexData.push_back(glm::dvec3(1, 0, 0));
 			}
 		}
+		std::vector<MyMesh::VertexHandle> vh;
 		for (int lPolygonIndex = 0; lPolygonIndex < polygonCount; ++lPolygonIndex) {
 			for (int lVerticeIndex = 0; lVerticeIndex < mesh->GetPolygonSize(lPolygonIndex); ++lVerticeIndex) {
 				int lControlPointIndex = mesh->GetPolygonVertex(lPolygonIndex, lVerticeIndex);
 				vertexIndices.push_back(lControlPointIndex + vertexDataPos);
+				vh.push_back(myMesh.vertex_handle(lControlPointIndex + vertexDataPos));
 			}
 			vertexIndices.push_back(UINT_MAX);
+			myMesh.add_face(vh);
+			vh.clear();
 		}
 	}
 	for (int i = 0; i < node->GetChildCount(); i++) {
@@ -178,9 +165,11 @@ void FBXMesh::UpdateMeshBuffer()
 	minP = glm::dvec3(DBL_MAX);
 	vertexData.clear();
 	vertexIndices.clear();
+	myMesh.clean();
 	FbxAMatrix modelMatrix;
 	modelMatrix.SetIdentity();
 	LoadNodeMesh(lRootNode, modelMatrix);
+	myMesh.update_normals();
 
 	tra = (maxP + minP) / -2.0;
 	sca = 1.0 / (maxP - minP) * 0.5;
@@ -192,6 +181,8 @@ void FBXMesh::UpdateMeshBuffer()
 	printf("min: %lf, %lf, %lf\n", minP.x, minP.y, minP.z);
 	for (int i = 0; i < vertexData.size(); i += 2) {
 		vertexData[i] = (vertexData[i] + tra) * minSca;
+		const double* n = myMesh.normal(myMesh.vertex_handle(i / 2)).data();
+		vertexData[i + 1] = glm::dvec3(n[0], n[1], n[2]);
 		//printf("%lf, %lf, %lf\n", vertexData[i].x, vertexData[i].y, vertexData[i].z);
 	}
 	//for (int i = 0; i < vertexIndices.size(); i ++) {
