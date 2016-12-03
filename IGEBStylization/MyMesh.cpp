@@ -22,8 +22,22 @@ void MyMesh::Render()
 	glBindVertexArray(0);
 }
 
+void MyMesh::ReadFile(const char* fileName)
+{
+	OpenMesh::IO::read_mesh(*this, fileName);
+	update_normals();
+	invalid = true;
+}
+
+void MyMesh::WriteFile(const char* fileName)
+{
+	OpenMesh::IO::write_mesh(*this, fileName);
+}
+
 void MyMesh::UpdateMeshBuffer()
 {
+	if (n_vertices() == 0)
+		return;
 	if (vao)
 		glDeleteVertexArrays(1, &vao);
 	if (vbo)
@@ -60,4 +74,5 @@ void MyMesh::UpdateMeshBuffer()
 	delete[] vertexIndices;
 
 	glBindVertexArray(0);
+	invalid = false;
 }

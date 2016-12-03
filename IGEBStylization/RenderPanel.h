@@ -1,6 +1,7 @@
 #pragma once
 #include "OpenGLPanel.h"
 #include "MyMesh.h"
+#include "FBXMesh.h"
 #include <GL\glew.h>
 #include <glm\glm.hpp>
 
@@ -59,7 +60,7 @@ private:
 	glm::mat4 projectionMatrix;
 	MyMesh backgroundMesh;
 	MyMesh exampleMesh;
-	MyMesh targetMesh;
+	FBXMesh targetMesh;
 	GLuint exaFBO;
 	GLuint exaColTex[4];
 	GLuint exaDephTex;
@@ -69,6 +70,8 @@ private:
 	GLuint exampleTexture;
 	GLuint resultTexture;
 	GLuint focusTexture;
+	glm::vec3 rotation;
+	glm::ivec2 previousMousePosition;
 
 	void CalculateResult();
 

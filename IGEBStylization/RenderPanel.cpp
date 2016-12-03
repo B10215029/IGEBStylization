@@ -4,12 +4,13 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>
 
-int RenderPanel::fboSize = 300;
+int RenderPanel::fboSize = 2000;
 
 RenderPanel::RenderPanel()
 {
-	modelMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(15.0f), glm::vec3(1, 0, 0));
-	modelMatrix = glm::rotate(modelMatrix, glm::radians(0.0f), glm::vec3(0, 1, 0));
+	rotation = glm::vec3(glm::radians(15.0f), 0, 0);
+	modelMatrix = glm::rotate(glm::mat4(1.0f), rotation.x, glm::vec3(1, 0, 0));
+	modelMatrix = glm::rotate(modelMatrix, rotation.y, glm::vec3(0, 1, 0));
 	viewMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -1));
 	projectionMatrix = glm::perspective(glm::radians(45.0f), (float)fboSize / (float)fboSize, 0.1f, 100.0f);
 	focusTexture = 0;
@@ -127,15 +128,12 @@ void RenderPanel::Initialize()
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-	OpenMesh::IO::read_mesh(backgroundMesh, "background.obj");
-	backgroundMesh.update_normals();
-	backgroundMesh.invalid = true;
-	OpenMesh::IO::read_mesh(exampleMesh, "ball.obj");
-	exampleMesh.update_normals();
-	exampleMesh.invalid = true;
-	OpenMesh::IO::read_mesh(targetMesh, "mesh.obj");
-	targetMesh.update_normals();
-	targetMesh.invalid = true;
+	backgroundMesh.ReadFile("background.obj");
+	exampleMesh.ReadFile("ball.obj");
+	//targetMesh.ReadFile("mesh.obj");
+	targetMesh.ReadFile("humanoid.fbx");
+	//FBXMesh fbxmesh;
+	//fbxmesh.ReadFile("humanoid.fbx");
 
 	exampleTexture = loadTextureFromFilePNG("example.png");
 }
@@ -268,6 +266,8 @@ void RenderPanel::MouseDown(int x, int y, int button)
 		writeTextureToFilePNG("resultTexture.png", resultTexture);
 		ReleaseGL();
 	}
+	previousMousePosition.x = x;
+	previousMousePosition.y = y;
 }
 
 void RenderPanel::MouseUp(int x, int y, int button)
@@ -279,7 +279,14 @@ void RenderPanel::MouseUp(int x, int y, int button)
 
 void RenderPanel::MouseMove(int x, int y)
 {
-
+	if (isLMBDown) {
+		rotation.x += glm::radians((float)(y - previousMousePosition.y));
+		rotation.y += glm::radians((float)(x - previousMousePosition.x));
+		modelMatrix = glm::rotate(glm::mat4(1.0f), rotation.x, glm::vec3(1, 0, 0));
+		modelMatrix = glm::rotate(modelMatrix, rotation.y, glm::vec3(0, 1, 0));
+	}
+	previousMousePosition.x = x;
+	previousMousePosition.y = y;
 }
 
 void RenderPanel::MouseWheel(int x, int y, int delta)
@@ -370,16 +377,12 @@ void RenderPanel::CalculateResult()
 
 void RenderPanel::LoadExampleModel(const char* fileName)
 {
-	OpenMesh::IO::read_mesh(exampleMesh, fileName);
-	exampleMesh.update_normals();
-	exampleMesh.invalid = true;
+	exampleMesh.ReadFile(fileName);
 }
 
 void RenderPanel::LoadTargetModel(const char* fileName)
 {
-	OpenMesh::IO::read_mesh(targetMesh, fileName);
-	targetMesh.update_normals();
-	targetMesh.invalid = true;
+	targetMesh.ReadFile(fileName);
 }
 
 void RenderPanel::LoadExampleImage(const char* fileName)

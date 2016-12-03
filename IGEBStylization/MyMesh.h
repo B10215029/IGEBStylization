@@ -16,13 +16,15 @@ struct MyTraits : public OpenMesh::DefaultTraits
 class MyMesh : public OpenMesh::TriMesh_ArrayKernelT<MyTraits>
 {
 public:
-	bool invalid;
 
 	MyMesh();
 	~MyMesh();
 	void Render();
+	void ReadFile(const char* fileName);
+	void WriteFile(const char* fileName);
 
 private:
+	bool invalid;
 	GLuint vao, vbo, ebo;
 
 	void UpdateMeshBuffer();

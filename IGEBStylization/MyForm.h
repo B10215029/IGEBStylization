@@ -48,6 +48,7 @@ namespace IGEBStylization {
 	private: System::Windows::Forms::Button^  button2;
 	private: System::Windows::Forms::Button^  button3;
 	private: System::Windows::Forms::OpenFileDialog^  openFileDialog1;
+	private: System::Windows::Forms::OpenFileDialog^  openFileDialog2;
 
 	private:
 		/// <summary>
@@ -69,9 +70,10 @@ namespace IGEBStylization {
 			this->tableLayoutPanel1 = (gcnew System::Windows::Forms::TableLayoutPanel());
 			this->tableLayoutPanel2 = (gcnew System::Windows::Forms::TableLayoutPanel());
 			this->button1 = (gcnew System::Windows::Forms::Button());
-			this->button2 = (gcnew System::Windows::Forms::Button());
 			this->button3 = (gcnew System::Windows::Forms::Button());
+			this->button2 = (gcnew System::Windows::Forms::Button());
 			this->openFileDialog1 = (gcnew System::Windows::Forms::OpenFileDialog());
+			this->openFileDialog2 = (gcnew System::Windows::Forms::OpenFileDialog());
 			this->tableLayoutPanel1->SuspendLayout();
 			this->tableLayoutPanel2->SuspendLayout();
 			this->SuspendLayout();
@@ -110,19 +112,17 @@ namespace IGEBStylization {
 			this->tableLayoutPanel2->ColumnCount = 1;
 			this->tableLayoutPanel2->ColumnStyles->Add((gcnew System::Windows::Forms::ColumnStyle(System::Windows::Forms::SizeType::Percent,
 				100)));
-			this->tableLayoutPanel2->ColumnStyles->Add((gcnew System::Windows::Forms::ColumnStyle(System::Windows::Forms::SizeType::Absolute,
-				20)));
 			this->tableLayoutPanel2->Controls->Add(this->button1, 0, 0);
-			this->tableLayoutPanel2->Controls->Add(this->button2, 0, 1);
-			this->tableLayoutPanel2->Controls->Add(this->button3, 0, 2);
+			this->tableLayoutPanel2->Controls->Add(this->button3, 0, 1);
+			this->tableLayoutPanel2->Controls->Add(this->button2, 0, 2);
 			this->tableLayoutPanel2->Dock = System::Windows::Forms::DockStyle::Fill;
 			this->tableLayoutPanel2->Location = System::Drawing::Point(790, 3);
 			this->tableLayoutPanel2->Name = L"tableLayoutPanel2";
-			this->tableLayoutPanel2->RowCount = 4;
+			this->tableLayoutPanel2->RowCount = 3;
 			this->tableLayoutPanel2->RowStyles->Add((gcnew System::Windows::Forms::RowStyle(System::Windows::Forms::SizeType::Percent, 25)));
+			this->tableLayoutPanel2->RowStyles->Add((gcnew System::Windows::Forms::RowStyle(System::Windows::Forms::SizeType::Percent, 50)));
 			this->tableLayoutPanel2->RowStyles->Add((gcnew System::Windows::Forms::RowStyle(System::Windows::Forms::SizeType::Percent, 25)));
-			this->tableLayoutPanel2->RowStyles->Add((gcnew System::Windows::Forms::RowStyle(System::Windows::Forms::SizeType::Percent, 25)));
-			this->tableLayoutPanel2->RowStyles->Add((gcnew System::Windows::Forms::RowStyle(System::Windows::Forms::SizeType::Percent, 25)));
+			this->tableLayoutPanel2->RowStyles->Add((gcnew System::Windows::Forms::RowStyle(System::Windows::Forms::SizeType::Absolute, 20)));
 			this->tableLayoutPanel2->Size = System::Drawing::Size(191, 755);
 			this->tableLayoutPanel2->TabIndex = 1;
 			// 
@@ -137,32 +137,36 @@ namespace IGEBStylization {
 			this->button1->UseVisualStyleBackColor = true;
 			this->button1->Click += gcnew System::EventHandler(this, &MyForm::button1_Click);
 			// 
-			// button2
-			// 
-			this->button2->Dock = System::Windows::Forms::DockStyle::Fill;
-			this->button2->Location = System::Drawing::Point(3, 191);
-			this->button2->Name = L"button2";
-			this->button2->Size = System::Drawing::Size(185, 182);
-			this->button2->TabIndex = 1;
-			this->button2->Text = L"Load Target Model";
-			this->button2->UseVisualStyleBackColor = true;
-			this->button2->Click += gcnew System::EventHandler(this, &MyForm::button2_Click);
-			// 
 			// button3
 			// 
 			this->button3->Dock = System::Windows::Forms::DockStyle::Fill;
-			this->button3->Location = System::Drawing::Point(3, 379);
+			this->button3->Location = System::Drawing::Point(3, 191);
 			this->button3->Name = L"button3";
-			this->button3->Size = System::Drawing::Size(185, 182);
+			this->button3->Size = System::Drawing::Size(185, 371);
 			this->button3->TabIndex = 2;
 			this->button3->Text = L"Load Example Image";
 			this->button3->UseVisualStyleBackColor = true;
 			this->button3->Click += gcnew System::EventHandler(this, &MyForm::button3_Click);
 			// 
+			// button2
+			// 
+			this->button2->Dock = System::Windows::Forms::DockStyle::Fill;
+			this->button2->Location = System::Drawing::Point(3, 568);
+			this->button2->Name = L"button2";
+			this->button2->Size = System::Drawing::Size(185, 184);
+			this->button2->TabIndex = 1;
+			this->button2->Text = L"Load Target Model";
+			this->button2->UseVisualStyleBackColor = true;
+			this->button2->Click += gcnew System::EventHandler(this, &MyForm::button2_Click);
+			// 
 			// openFileDialog1
 			// 
-			this->openFileDialog1->FileName = L"openFileDialog1";
+			this->openFileDialog1->Filter = L"模型檔|*.obj;*.fbx|所有檔案|*.*";
 			this->openFileDialog1->InitialDirectory = L"./";
+			// 
+			// openFileDialog2
+			// 
+			this->openFileDialog2->Filter = L"PNG|*.png";
 			// 
 			// MyForm
 			// 
@@ -189,9 +193,9 @@ private: System::Void button2_Click(System::Object^  sender, System::EventArgs^ 
 	}
 }
 private: System::Void button3_Click(System::Object^  sender, System::EventArgs^  e) {
-	if (openFileDialog1->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
+	if (openFileDialog2->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
 		renderPanel->BindGL();
-		renderPanel->LoadExampleImage((const char*)(System::Runtime::InteropServices::Marshal::StringToHGlobalAnsi(openFileDialog1->FileName)).ToPointer());
+		renderPanel->LoadExampleImage((const char*)(System::Runtime::InteropServices::Marshal::StringToHGlobalAnsi(openFileDialog2->FileName)).ToPointer());
 		renderPanel->ReleaseGL();
 	}
 }

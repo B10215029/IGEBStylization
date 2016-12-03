@@ -105,7 +105,7 @@
       <PreprocessorDefinitions>_DEBUG;_USE_MATH_DEFINES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>opengl32.lib;glu32.lib;libglew32d.lib;OpenMeshCored.lib;zlibstaticd.lib;libpng16_staticd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;glu32.lib;libglew32d.lib;OpenMeshCored.lib;zlibstaticd.lib;libpng16_staticd.lib;x64/debug/libfbxsdk-md.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -123,7 +123,7 @@
       <PreprocessorDefinitions>NDEBUG;_USE_MATH_DEFINES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>opengl32.lib;glu32.lib;libglew32.lib;OpenMeshCore.lib;zlibstatic.lib;libpng16_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;glu32.lib;libglew32.lib;OpenMeshCore.lib;zlibstatic.lib;libpng16_static.lib;x64/release/libfbxsdk-md.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -134,6 +134,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="FBXMesh.cpp" />
     <ClCompile Include="RenderPanel.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MyForm.cpp" />
@@ -143,6 +144,7 @@
     <ClCompile Include="ShaderUtility.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="FBXMesh.h" />
     <ClInclude Include="RenderPanel.h" />
     <ClInclude Include="MyForm.h">
       <FileType>CppForm</FileType>

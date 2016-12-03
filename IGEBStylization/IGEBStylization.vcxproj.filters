@@ -40,6 +40,9 @@
     <ClCompile Include="ShaderUtility.cpp">
       <Filter>原始程式檔</Filter>
     </ClCompile>
+    <ClCompile Include="FBXMesh.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MyForm.h">
@@ -58,6 +61,9 @@
       <Filter>標頭檔</Filter>
     </ClInclude>
     <ClInclude Include="ShaderUtility.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="FBXMesh.h">
       <Filter>標頭檔</Filter>
     </ClInclude>
   </ItemGroup>
