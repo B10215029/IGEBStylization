@@ -4,7 +4,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>
 
-int RenderPanel::fboSize = 2000;
+int RenderPanel::fboSize = 99;
 
 RenderPanel::RenderPanel()
 {
@@ -24,6 +24,8 @@ void RenderPanel::Initialize()
 {
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
+	glPixelStorei(GL_PACK_ALIGNMENT, 1);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
 	drawSolid.program = loadProgram("./shader/DrawMesh.vert", "./shader/DrawMesh.frag");
 	drawSolid.modelMatrixLocation = glGetUniformLocation(drawSolid.program, "model_matrix");
@@ -126,6 +128,20 @@ void RenderPanel::Initialize()
 	if (GL_FRAMEBUFFER_COMPLETE != glCheckFramebufferStatus(GL_FRAMEBUFFER))
 		std::cout << "Framebuffer Error!" << std::endl;
 
+	glGenFramebuffers(1, &exaTexFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, exaTexFBO);
+
+	glGenTextures(1, &exampleTexture);
+	glBindTexture(GL_TEXTURE_2D, exampleTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, fboSize, fboSize, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, exampleTexture, 0);
+
+	glDrawBuffers(1, drawbuff);
+	if (GL_FRAMEBUFFER_COMPLETE != glCheckFramebufferStatus(GL_FRAMEBUFFER))
+		std::cout << "Framebuffer Error!" << std::endl;
+
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	backgroundMesh.ReadFile("background.obj");
@@ -135,7 +151,7 @@ void RenderPanel::Initialize()
 	//FBXMesh fbxmesh;
 	//fbxmesh.ReadFile("humanoid.fbx");
 
-	exampleTexture = loadTextureFromFilePNG("example.png");
+	rawExampleTexture = loadTextureFromFilePNG("example.png");
 }
 
 void RenderPanel::Reshape(int width, int height)
@@ -174,6 +190,14 @@ void RenderPanel::Display()
 	glUniform3fv(drawSolid.AmbientLocation, 1, glm::value_ptr(glm::vec3(0.2, 0.0, 0.0)));
 	glUniform4fv(drawSolid.colorLocation, 1, glm::value_ptr(glm::vec4(1.0, 0.0, 0.0, 1.0)));
 	targetMesh.Render();
+
+	glBindFramebuffer(GL_FRAMEBUFFER, exaTexFBO);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glUseProgram(drawTexture.program);
+	glActiveTexture(GL_TEXTURE0);
+	glUniform1i(drawTexture.textureLocation, 0);
+	glBindTexture(GL_TEXTURE_2D, rawExampleTexture);
+	glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(0, 0, width, height);
@@ -315,10 +339,6 @@ void RenderPanel::CalculateResult()
 	unsigned char* e;
 	unsigned char* r = new unsigned char[fboSize * fboSize * 3];
 	float* exampleFeature = new float[fboSize * fboSize];
-	int exampleTextureFormat;
-	glBindTexture(GL_TEXTURE_2D, exampleTexture);
-	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &exampleTextureFormat);
-	glBindTexture(GL_TEXTURE_2D, 0);
 	ec[0] = writeTextureToArray(exaColTex[0]);
 	ec[1] = writeTextureToArray(exaColTex[1]);
 	ec[2] = writeTextureToArray(exaColTex[2]);
@@ -336,8 +356,17 @@ void RenderPanel::CalculateResult()
 		f[3] = ColorLength(&ec[3][i * 3]);
 		exampleFeature[i] = VectorLength(f, 4);
 	}
+	int process = 0, size = fboSize * fboSize;
 	for (int i = 0; i < fboSize * fboSize; i++) {
-		if (i % 100 == 0) printf("%d\n", i);
+		if (i * 100 / size > process) {
+			process = i * 100 / size;
+			//printf("%d%%\n", process);
+			if (process % 10)
+				putc('-', stdout);
+			else
+				putc('|', stdout);
+			//putc('0' + process / 10, stdout);
+		}
 		float f[4], fl, minDis = FLT_MAX;
 		int minIndex;
 		f[0] = ColorLength(&tc[0][i * 3]);
@@ -352,15 +381,16 @@ void RenderPanel::CalculateResult()
 			}
 		}
 		//if (i % 100 == 0) printf("%d, %lf\n", minIndex, minDis);
-		r[i * 3 + 0] = e[minIndex * (exampleTextureFormat == GL_RGB8 ? 3 : 4) + 0];
-		r[i * 3 + 1] = e[minIndex * (exampleTextureFormat == GL_RGB8 ? 3 : 4) + 1];
-		r[i * 3 + 2] = e[minIndex * (exampleTextureFormat == GL_RGB8 ? 3 : 4) + 2];
+		r[i * 3 + 0] = e[minIndex * 3 + 0];
+		r[i * 3 + 1] = e[minIndex * 3 + 1];
+		r[i * 3 + 2] = e[minIndex * 3 + 2];
 	}
+	printf("|\nDone\n");
 	glGenTextures(1, &resultTexture);
 	glBindTexture(GL_TEXTURE_2D, resultTexture);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, fboSize, fboSize, 0, GL_RGB, GL_UNSIGNED_BYTE, r);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, fboSize, fboSize, 0, GL_RGB, GL_UNSIGNED_BYTE, r);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	delete[] r;
 	delete[] exampleFeature;
@@ -387,5 +417,5 @@ void RenderPanel::LoadTargetModel(const char* fileName)
 
 void RenderPanel::LoadExampleImage(const char* fileName)
 {
-	exampleTexture = loadTextureFromFilePNG(fileName);
+	rawExampleTexture = loadTextureFromFilePNG(fileName);
 }

@@ -67,7 +67,9 @@ private:
 	GLuint tarFBO;
 	GLuint tarColTex[4];
 	GLuint tarDephTex;
+	GLuint exaTexFBO;
 	GLuint exampleTexture;
+	GLuint rawExampleTexture;
 	GLuint resultTexture;
 	GLuint focusTexture;
 	glm::vec3 rotation;
