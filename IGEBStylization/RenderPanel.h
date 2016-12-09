@@ -9,6 +9,7 @@ class RenderPanel : public OpenGLPanel
 {
 public:
 	static int fboSize;
+	static RenderPanel* singleton;
 
 	RenderPanel();
 	~RenderPanel();
@@ -22,6 +23,8 @@ public:
 	void LoadExampleModel(const char* fileName);
 	void LoadTargetModel(const char* fileName);
 	void LoadExampleImage(const char* fileName);
+	void StartCalculate();
+	void ResetView();
 
 private:
 	struct DrawSolidProgram {
@@ -74,7 +77,9 @@ private:
 	GLuint focusTexture;
 	glm::vec3 rotation;
 	glm::ivec2 previousMousePosition;
+	GLubyte* resultData;
 
+	static void CalSingleton();
 	void CalculateResult();
 
 };

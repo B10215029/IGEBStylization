@@ -25,4 +25,6 @@ GLuint loadProgram(const int vertexShaderResourceId, const int fragmentShaderRes
 
 void writeTextureToFilePNG(const char* filePath, GLuint textureID);
 
+void writeArrayToFilePNG(const char* filePath, const unsigned char* data, int width, int height, int format);
+
 unsigned char* writeTextureToArray(GLuint textureID);

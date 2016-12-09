@@ -3,8 +3,15 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>
+#include <ctime>
 
-int RenderPanel::fboSize = 99;
+int RenderPanel::fboSize = 300;
+RenderPanel* RenderPanel::singleton = NULL;
+
+void RenderPanel::CalSingleton()
+{
+	singleton->CalculateResult();
+}
 
 RenderPanel::RenderPanel()
 {
@@ -14,6 +21,7 @@ RenderPanel::RenderPanel()
 	viewMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -1));
 	projectionMatrix = glm::perspective(glm::radians(45.0f), (float)fboSize / (float)fboSize, 0.1f, 100.0f);
 	focusTexture = 0;
+	resultData = new GLubyte[fboSize * fboSize * 3];
 }
 
 RenderPanel::~RenderPanel()
@@ -152,6 +160,7 @@ void RenderPanel::Initialize()
 	//fbxmesh.ReadFile("humanoid.fbx");
 
 	rawExampleTexture = loadTextureFromFilePNG("example.png");
+	resultTexture = 0;
 }
 
 void RenderPanel::Reshape(int width, int height)
@@ -161,6 +170,14 @@ void RenderPanel::Reshape(int width, int height)
 
 void RenderPanel::Display()
 {
+	glDeleteTextures(1, &resultTexture);
+	glGenTextures(1, &resultTexture);
+	glBindTexture(GL_TEXTURE_2D, resultTexture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, fboSize, fboSize, 0, GL_RGB, GL_UNSIGNED_BYTE, resultData);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
 	glViewport(0, 0, fboSize, fboSize);
 	glUseProgram(drawSolid.program);
 	glUniformMatrix4fv(drawSolid.modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(modelMatrix));
@@ -273,9 +290,7 @@ void RenderPanel::MouseDown(int x, int y, int button)
 			focusTexture = resultTexture;
 	}
 	if (button == 1) {
-		BindGL();
-		CalculateResult();
-		ReleaseGL();
+		ResetView();
 	}
 	if (button == 2) {
 		BindGL();
@@ -338,7 +353,9 @@ void RenderPanel::CalculateResult()
 	unsigned char* tc[4];
 	unsigned char* e;
 	unsigned char* r = new unsigned char[fboSize * fboSize * 3];
-	float* exampleFeature = new float[fboSize * fboSize];
+
+	// Get Image
+	BindGL();
 	ec[0] = writeTextureToArray(exaColTex[0]);
 	ec[1] = writeTextureToArray(exaColTex[1]);
 	ec[2] = writeTextureToArray(exaColTex[2]);
@@ -348,6 +365,10 @@ void RenderPanel::CalculateResult()
 	tc[2] = writeTextureToArray(tarColTex[2]);
 	tc[3] = writeTextureToArray(tarColTex[3]);
 	e = writeTextureToArray(exampleTexture);
+	ReleaseGL();
+
+	// Compute Features
+	float* exampleFeature = new float[fboSize * fboSize];
 	for (int i = 0; i < fboSize * fboSize; i++) {
 		float f[4];
 		f[0] = ColorLength(&ec[0][i * 3]);
@@ -356,6 +377,10 @@ void RenderPanel::CalculateResult()
 		f[3] = ColorLength(&ec[3][i * 3]);
 		exampleFeature[i] = VectorLength(f, 4);
 	}
+
+	// Compute Gaussian pyramids
+
+	// Compute Result
 	int process = 0, size = fboSize * fboSize;
 	for (int i = 0; i < fboSize * fboSize; i++) {
 		if (i * 100 / size > process) {
@@ -380,18 +405,15 @@ void RenderPanel::CalculateResult()
 				minIndex = j;
 			}
 		}
-		//if (i % 100 == 0) printf("%d, %lf\n", minIndex, minDis);
 		r[i * 3 + 0] = e[minIndex * 3 + 0];
 		r[i * 3 + 1] = e[minIndex * 3 + 1];
 		r[i * 3 + 2] = e[minIndex * 3 + 2];
+		memcpy(&resultData[i * 3], &r[i * 3], sizeof(GLubyte) * 3);
 	}
 	printf("|\nDone\n");
-	glGenTextures(1, &resultTexture);
-	glBindTexture(GL_TEXTURE_2D, resultTexture);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, fboSize, fboSize, 0, GL_RGB, GL_UNSIGNED_BYTE, r);
-	glBindTexture(GL_TEXTURE_2D, 0);
+
+
+
 	delete[] r;
 	delete[] exampleFeature;
 	free(ec[0]);
@@ -403,6 +425,12 @@ void RenderPanel::CalculateResult()
 	free(tc[2]);
 	free(tc[3]);
 	free(e);
+
+	std::time_t time = std::time(NULL);
+	char fileName[100], mbsrt[100];
+	std::strftime(mbsrt, sizeof(mbsrt), "%Y%m%d%H%M%S", std::localtime(&time));
+	sprintf(fileName, "result_%s.png", mbsrt);
+	writeArrayToFilePNG(fileName, resultData, fboSize, fboSize, 3);
 }
 
 void RenderPanel::LoadExampleModel(const char* fileName)
@@ -418,4 +446,21 @@ void RenderPanel::LoadTargetModel(const char* fileName)
 void RenderPanel::LoadExampleImage(const char* fileName)
 {
 	rawExampleTexture = loadTextureFromFilePNG(fileName);
+}
+
+void RenderPanel::StartCalculate()
+{
+	//CalculateResult();
+	singleton = this;
+	System::Threading::Thread^ calThread = gcnew System::Threading::Thread(gcnew System::Threading::ThreadStart(CalSingleton));
+	calThread->Start();
+}
+
+void RenderPanel::ResetView()
+{
+	rotation = glm::vec3(glm::radians(15.0f), 0, 0);
+	modelMatrix = glm::rotate(glm::mat4(1.0f), rotation.x, glm::vec3(1, 0, 0));
+	modelMatrix = glm::rotate(modelMatrix, rotation.y, glm::vec3(0, 1, 0));
+	viewMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -1));
+	projectionMatrix = glm::perspective(glm::radians(45.0f), (float)fboSize / (float)fboSize, 0.1f, 100.0f);
 }

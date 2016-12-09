@@ -182,11 +182,20 @@ namespace IGEBStylization {
 
 		}
 #pragma endregion
-	private: System::Void button1_Click(System::Object^  sender, System::EventArgs^  e) {
-		if (openFileDialog1->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
-			renderPanel->LoadExampleModel((const char*)(System::Runtime::InteropServices::Marshal::StringToHGlobalAnsi(openFileDialog1->FileName)).ToPointer());
-		}
+protected: virtual bool ProcessCmdKey(System::Windows::Forms::Message% msg, System::Windows::Forms::Keys keyData) override {
+	if (keyData == System::Windows::Forms::Keys::Space) {
+		renderPanel->StartCalculate();
+		return true;
 	}
+	else {
+		return Form::ProcessCmdKey(msg, keyData);
+	}
+}
+private: System::Void button1_Click(System::Object^  sender, System::EventArgs^  e) {
+	if (openFileDialog1->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
+		renderPanel->LoadExampleModel((const char*)(System::Runtime::InteropServices::Marshal::StringToHGlobalAnsi(openFileDialog1->FileName)).ToPointer());
+	}
+}
 private: System::Void button2_Click(System::Object^  sender, System::EventArgs^  e) {
 	if (openFileDialog1->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
 		renderPanel->LoadTargetModel((const char*)(System::Runtime::InteropServices::Marshal::StringToHGlobalAnsi(openFileDialog1->FileName)).ToPointer());
