@@ -4,12 +4,19 @@
 #include "FBXMesh.h"
 #include <GL\glew.h>
 #include <glm\glm.hpp>
+#include <ctime>
 
 class RenderPanel : public OpenGLPanel
 {
 public:
 	static int fboSize;
+	static std::string modelName;
+	static std::string imageName;
+	static bool autoRun;
 	static RenderPanel* singleton;
+	static std::time_t time;
+	static char fileName[100], mbsrt[100];
+	static int drawCount;
 
 	RenderPanel();
 	~RenderPanel();
@@ -80,6 +87,7 @@ private:
 	GLubyte* resultData;
 
 	static void CalSingleton();
+	static void CalSingletonExit();
 	void CalculateResult();
 
 };

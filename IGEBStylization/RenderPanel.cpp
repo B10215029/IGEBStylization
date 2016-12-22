@@ -3,17 +3,29 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>
-#include <ctime>
 #include <fstream>
 
-#define MAX_LEVEL 6
+#define MAX_LEVEL 4
 #define OPTI_ITER 6
-int RenderPanel::fboSize = 1024;
+int RenderPanel::fboSize = 128;
 RenderPanel* RenderPanel::singleton = NULL;
+std::string RenderPanel::modelName;
+std::string RenderPanel::imageName;
+bool RenderPanel::autoRun = false;
+int RenderPanel::drawCount = 0;
+
+std::time_t RenderPanel::time = std::time(NULL);
+char RenderPanel::fileName[100], RenderPanel::mbsrt[100];
 
 void RenderPanel::CalSingleton()
 {
 	singleton->CalculateResult();
+}
+
+void RenderPanel::CalSingletonExit()
+{
+	singleton->CalculateResult();
+	exit(0);
 }
 
 RenderPanel::RenderPanel()
@@ -173,6 +185,10 @@ void RenderPanel::Reshape(int width, int height)
 
 void RenderPanel::Display()
 {
+	if (autoRun && drawCount == 10) {
+		LoadExampleImage(imageName.c_str());
+		LoadTargetModel(modelName.c_str());
+	}
 	glDeleteTextures(1, &resultTexture);
 	glGenTextures(1, &resultTexture);
 	glBindTexture(GL_TEXTURE_2D, resultTexture);
@@ -262,6 +278,11 @@ void RenderPanel::Display()
 		glBindTexture(GL_TEXTURE_2D, resultTexture);
 	}
 	glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+	if (autoRun && drawCount > 20) {
+		StartCalculate();
+		autoRun = false;
+	}
+	drawCount++;
 }
 
 void RenderPanel::MouseDown(int x, int y, int button)
@@ -297,16 +318,17 @@ void RenderPanel::MouseDown(int x, int y, int button)
 	}
 	if (button == 2) {
 		BindGL();
-		writeTextureToFilePNG("exaColTex[0].png", exaColTex[0]);
-		writeTextureToFilePNG("exaColTex[1].png", exaColTex[1]);
-		writeTextureToFilePNG("exaColTex[2].png", exaColTex[2]);
-		writeTextureToFilePNG("exaColTex[3].png", exaColTex[3]);
-		writeTextureToFilePNG("tarColTex[0].png", tarColTex[0]);
-		writeTextureToFilePNG("tarColTex[1].png", tarColTex[1]);
-		writeTextureToFilePNG("tarColTex[2].png", tarColTex[2]);
-		writeTextureToFilePNG("tarColTex[3].png", tarColTex[3]);
-		writeTextureToFilePNG("exampleTexture.png", exampleTexture);
-		writeTextureToFilePNG("resultTexture.png", resultTexture);
+		std::strftime(mbsrt, sizeof(mbsrt), "%Y%m%d%H%M%S", std::localtime(&time));
+		sprintf(fileName, "%sexaColTex[0].png", mbsrt); writeTextureToFilePNG(fileName, exaColTex[0]);
+		sprintf(fileName, "%sexaColTex[1].png", mbsrt); writeTextureToFilePNG(fileName, exaColTex[1]);
+		sprintf(fileName, "%sexaColTex[2].png", mbsrt); writeTextureToFilePNG(fileName, exaColTex[2]);
+		sprintf(fileName, "%sexaColTex[3].png", mbsrt); writeTextureToFilePNG(fileName, exaColTex[3]);
+		sprintf(fileName, "%starColTex[0].png", mbsrt); writeTextureToFilePNG(fileName, tarColTex[0]);
+		sprintf(fileName, "%starColTex[1].png", mbsrt); writeTextureToFilePNG(fileName, tarColTex[1]);
+		sprintf(fileName, "%starColTex[2].png", mbsrt); writeTextureToFilePNG(fileName, tarColTex[2]);
+		sprintf(fileName, "%starColTex[3].png", mbsrt); writeTextureToFilePNG(fileName, tarColTex[3]);
+		sprintf(fileName, "%sexampleTexture.png", mbsrt); writeTextureToFilePNG(fileName, exampleTexture);
+		sprintf(fileName, "%sresultTexture.png", mbsrt); writeTextureToFilePNG(fileName, resultTexture);
 		ReleaseGL();
 	}
 	previousMousePosition.x = x;
@@ -398,17 +420,14 @@ void ComputePyramids(T** data, int stride, int width, int height, int maxLevel)
 			}
 			//memcpy(&data[level][i * stride], &data[level - 1][(i % levelHeight[level] * 2 + i / levelHeight[level] * 2 * levelHeight[level - 1]) * stride], sizeof(T) * stride);
 		}
-		char fn[100];
-		sprintf(fn, "p%d.png", tid++);
-		writeArrayToFilePNG(fn, data[level], levelWidth[level], levelHeight[level], stride);
+		//char fn[100];
+		//sprintf(fn, "p%d.png", tid++);
+		//writeArrayToFilePNG(fn, data[level], levelWidth[level], levelHeight[level], stride);
 	}
 }
 
 void RenderPanel::CalculateResult()
 {
-	std::time_t time = std::time(NULL);
-	char fileName[100], mbsrt[100];
-	std::strftime(mbsrt, sizeof(mbsrt), "%Y%m%d%H%M%S", std::localtime(&time));
 
 	int* levelSize = new int[MAX_LEVEL];
 
@@ -417,7 +436,7 @@ void RenderPanel::CalculateResult()
 	unsigned char* ap[MAX_LEVEL];
 	unsigned char* bp[MAX_LEVEL];
 	int* st[MAX_LEVEL];
-	double* fv[MAX_LEVEL];
+	//double* fv[MAX_LEVEL];
 
 	// Get Image
 	printf("Get Image\n");
@@ -436,19 +455,12 @@ void RenderPanel::CalculateResult()
 
 	// Compute Features
 	levelSize[0] = fboSize;
+	st[0] = new int[levelSize[0] * levelSize[0]];
 	for (int level = 1; level < MAX_LEVEL; level++) {
 		levelSize[level] = levelSize[level - 1] / 2;
 		//printf("levelSize[%d]: %d\n", level, levelSize[level]);
-		fv[level] = new double[levelSize[level] * levelSize[level] * 4];
 		st[level] = new int[levelSize[level] * levelSize[level]];
-	//	double f[4];
-	//	for (int i = 0; i < levelSize[level] * levelSize[level]; i++) {
-	//		f[0] = ColorLength(&a[0][level][i * 3]);
-	//		f[1] = ColorLength(&a[1][level][i * 3]);
-	//		f[2] = ColorLength(&a[2][level][i * 3]);
-	//		f[3] = ColorLength(&a[3][level][i * 3]);
-	//		fv[level][i] = VectorLength(f, 4);
-	//	}
+		//fv[level] = new double[levelSize[level] * levelSize[level] * 4];
 	}
 
 	// Compute Gaussian pyramids
@@ -469,7 +481,7 @@ void RenderPanel::CalculateResult()
 	printf("Compute Result\n");
 	for (int level = MAX_LEVEL - 1; level >= 0; level--) {
 		printf("level %d, size %d\n", level, levelSize[level]);
-		// for each pixel in b
+		// Image Analogies
 		for (int by = 0; by < levelSize[level]; ++by) {
 			for (int bx = 0; bx < levelSize[level]; ++bx) {
 				int bi = by * levelSize[level] + bx;
@@ -481,13 +493,27 @@ void RenderPanel::CalculateResult()
 				for (int ay = 0; ay < levelSize[level]; ++ay) {
 					for (int ax = 0; ax < levelSize[level]; ++ax) {
 						int ai = ay * levelSize[level] + ax;
-						double f[4], fl = 0; // distance of pixel in b
-						// compute distance of image 0(full color), image 1(ambient), image 2(diffuse), image 3(specular)
-						f[0] = ColorDiff(&a[0][level][ai * 3], &b[0][level][bi * 3]);
-						f[1] = ColorDiff(&a[1][level][ai * 3], &b[1][level][bi * 3]);
-						f[2] = ColorDiff(&a[2][level][ai * 3], &b[2][level][bi * 3]);
-						f[3] = ColorDiff(&a[3][level][ai * 3], &b[3][level][bi * 3]);
-						fl += VectorLength(f, 4);
+
+						// compute features
+						double f[10], fl = 0; // distance of pixel in b
+						int pCount = 0;
+						f[pCount++] = ColorDiff(&a[0][level][ai * 3], &b[0][level][bi * 3]);
+						f[pCount++] = ColorDiff(&a[1][level][ai * 3], &b[1][level][bi * 3]);
+						f[pCount++] = ColorDiff(&a[2][level][ai * 3], &b[2][level][bi * 3]);
+						f[pCount++] = ColorDiff(&a[3][level][ai * 3], &b[3][level][bi * 3]);
+						if (level != MAX_LEVEL - 1) {
+							int decai = (ay / 2) * levelSize[level + 1] + (ax / 2);
+							int decbi = (by / 2) * levelSize[level + 1] + (bx / 2);
+							f[pCount++] = ColorDiff(&a[0][level + 1][decai * 3], &b[0][level + 1][decbi * 3]);
+							f[pCount++] = ColorDiff(&a[1][level + 1][decai * 3], &b[1][level + 1][decbi * 3]);
+							f[pCount++] = ColorDiff(&a[2][level + 1][decai * 3], &b[2][level + 1][decbi * 3]);
+							f[pCount++] = ColorDiff(&a[3][level + 1][decai * 3], &b[3][level + 1][decbi * 3]);
+						}
+						fl += VectorLength(f, pCount);
+
+
+
+
 						if (fl < appDis || fl - appDis < 1e-10 && rand() < RAND_MAX / 100 ) {
 							appDis = fl;
 							appIndex = ai;
@@ -516,12 +542,21 @@ void RenderPanel::CalculateResult()
 							ay < 0 || ay >= levelSize[level])
 							continue;
 						// compute distance of image 0(full color), image 1(ambient), image 2(diffuse), image 3(specular)
-						double f[4], fl = 0;
-						f[0] = ColorDiff(&a[0][level][ai * 3], &b[0][level][bi * 3]);
-						f[1] = ColorDiff(&a[1][level][ai * 3], &b[1][level][bi * 3]);
-						f[2] = ColorDiff(&a[2][level][ai * 3], &b[2][level][bi * 3]);
-						f[3] = ColorDiff(&a[3][level][ai * 3], &b[3][level][bi * 3]);
-						fl += VectorLength(f, 4);
+						double f[10], fl = 0; // distance of pixel in b
+						int pCount = 0;
+						f[pCount++] = ColorDiff(&a[0][level][ai * 3], &b[0][level][bi * 3]);
+						f[pCount++] = ColorDiff(&a[1][level][ai * 3], &b[1][level][bi * 3]);
+						f[pCount++] = ColorDiff(&a[2][level][ai * 3], &b[2][level][bi * 3]);
+						f[pCount++] = ColorDiff(&a[3][level][ai * 3], &b[3][level][bi * 3]);
+						if (level != MAX_LEVEL - 1) {
+							int decai = (ay / 2) * levelSize[level + 1] + (ax / 2);
+							int decbi = (by / 2) * levelSize[level + 1] + (bx / 2);
+							f[pCount++] = ColorDiff(&a[0][level + 1][decai * 3], &b[0][level + 1][decbi * 3]);
+							f[pCount++] = ColorDiff(&a[1][level + 1][decai * 3], &b[1][level + 1][decbi * 3]);
+							f[pCount++] = ColorDiff(&a[2][level + 1][decai * 3], &b[2][level + 1][decbi * 3]);
+							f[pCount++] = ColorDiff(&a[3][level + 1][decai * 3], &b[3][level + 1][decbi * 3]);
+						}
+						fl += VectorLength(f, pCount);
 						if (fl < cohDis || fl - cohDis < 1e-10 && rand() < RAND_MAX / 100) {
 							cohDis = fl;
 							cohIndex = ai;
@@ -531,7 +566,7 @@ void RenderPanel::CalculateResult()
 
 				// chose one
 				int bestIndex;
-				if (cohDis < appIndex * 1000) {
+				if (cohDis < appIndex * 500) {
 					bestIndex = cohIndex;
 				}
 				else {
@@ -660,14 +695,15 @@ void RenderPanel::CalculateResult()
 				}
 			}
 		}
-		char fn[100];
-		sprintf(fn, "%slevel%d_%d.png", mbsrt, level, levelSize[level]);
-		writeArrayToFilePNG(fn, bp[level], levelSize[level], levelSize[level], 3);
+		std::strftime(mbsrt, sizeof(mbsrt), "%Y%m%d%H%M%S", std::localtime(&time));
+		sprintf(fileName, "%slevel%d_%d.png", mbsrt, level, levelSize[level]);
+		writeArrayToFilePNG(fileName, bp[level], levelSize[level], levelSize[level], 3);
 	}
 	printf("OK\n");
 
 
-	sprintf(fileName, "result_%s.png", mbsrt);
+	std::strftime(mbsrt, sizeof(mbsrt), "%Y%m%d%H%M%S", std::localtime(&time));
+	sprintf(fileName, "result_%s_%s.png", modelName.c_str(), mbsrt);
 	writeArrayToFilePNG(fileName, resultData, fboSize, fboSize, 3);
 }
 
@@ -690,8 +726,14 @@ void RenderPanel::StartCalculate()
 {
 	//CalculateResult();
 	singleton = this;
-	System::Threading::Thread^ calThread = gcnew System::Threading::Thread(gcnew System::Threading::ThreadStart(CalSingleton));
-	calThread->Start();
+	if (autoRun) {
+		System::Threading::Thread^ calThread = gcnew System::Threading::Thread(gcnew System::Threading::ThreadStart(CalSingletonExit));
+		calThread->Start();
+	}
+	else {
+		System::Threading::Thread^ calThread = gcnew System::Threading::Thread(gcnew System::Threading::ThreadStart(CalSingleton));
+		calThread->Start();
+	}
 }
 
 void RenderPanel::ResetView()
