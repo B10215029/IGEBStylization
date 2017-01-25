@@ -5,8 +5,8 @@
 #include <iostream>
 #include <fstream>
 
-#define MAX_LEVEL 4
-#define OPTI_ITER 6
+#define MAX_LEVEL 2
+#define OPTI_ITER 4
 int RenderPanel::fboSize = 128;
 RenderPanel* RenderPanel::singleton = NULL;
 std::string RenderPanel::modelName;
@@ -383,46 +383,64 @@ double VectorLength(double* v, int d)
 	return r;
 }
 
-template<typename T>
-void ComputePyramids(T** data, int stride, int width, int height, int maxLevel)
+void ComputePyramids(unsigned char** data, int stride, int width, int height, int maxLevel)
 {
 	static const float weight[] = { 0.0453542, 0.0566406, 0.0453542, 0.0566406, 0.0707355, 0.0566406, 0.0453542, 0.0566406, 0.0453542 };
 	static const int ox[] = { -1, 0, 1, -1, 0, 1, -1, 0, 1 };
 	static const int oy[] = { -1, -1, -1, 0, 0, 0, 1, 1, 1 };
 	static int tid = 0;
-	int* levelWidth = new int[maxLevel];
-	int* levelHeight = new int[maxLevel];
-	levelWidth[0] = width;
-	levelHeight[0] = height;
-	for (int level = 1; level < maxLevel; level++) {
-		levelWidth[level] = levelWidth[level - 1] / 2;
-		levelHeight[level] = levelHeight[level - 1] / 2;
-		data[level] = new T[levelWidth[level] * levelHeight[level] * stride];
-		//printf("new %p\n", data[level]);
-		for (int i = 0; i < levelWidth[level] * levelHeight[level]; i++) {
-			float weightSum = 0;
-			float* colorSum = new float[stride];
-			for (int ch = 0; ch < stride; ch++) {
-				colorSum[ch] = 0;
-			}
-			int mx = i % levelHeight[level] * 2;
-			int my = i / levelHeight[level] * 2;
-			for (int j = 0; j < 9; j++) {
-				if ((mx + ox[j]) < 0 || (mx + ox[j]) >= levelWidth[level - 1] || (my + oy[j]) < 0 || (my + oy[j]) > levelHeight[level - 1])
-					continue;
-				for (int ch = 0; ch < stride; ch++) {
-					colorSum[ch] += data[level - 1][((my + oy[j]) * levelWidth[level - 1] + (mx + ox[j])) * stride + ch] * weight[j];
+	bool success = false;
+	while (!success) {
+		try {
+			int* levelWidth = new int[maxLevel];
+			int* levelHeight = new int[maxLevel];
+			levelWidth[0] = width;
+			levelHeight[0] = height;
+			for (int level = 1; level < maxLevel; level++) {
+				levelWidth[level] = levelWidth[level - 1] / 2;
+				levelHeight[level] = levelHeight[level - 1] / 2;
+				data[level] = new unsigned char[levelWidth[level] * levelHeight[level] * stride];
+				//printf("new %p\n", data[level]);
+				for (int i = 0; i < levelWidth[level] * levelHeight[level]; i++) {
+					float weightSum = 0;
+					float* colorSum = new float[stride];
+					for (int ch = 0; ch < stride; ch++) {
+						colorSum[ch] = 0;
+					}
+					int mx = i % levelHeight[level] * 2;
+					int my = i / levelHeight[level] * 2;
+					for (int j = 0; j < 9; j++) {
+						if ((mx + ox[j]) < 0 || (mx + ox[j]) >= levelWidth[level - 1] || (my + oy[j]) < 0 || (my + oy[j]) > levelHeight[level - 1])
+							continue;
+						for (int ch = 0; ch < stride; ch++) {
+							int a1 = my + oy[j];
+							int a2 = mx + ox[j];
+							int a3 = (my + oy[j]) * levelWidth[level - 1];
+							int a4 = ((my + oy[j]) * levelWidth[level - 1] + (mx + ox[j]));
+							int a5 = ((my + oy[j]) * levelWidth[level - 1] + (mx + ox[j])) * stride;
+							int a6 = ((my + oy[j]) * levelWidth[level - 1] + (mx + ox[j])) * stride + ch;
+							int a7 = data[level - 1][((my + oy[j]) * levelWidth[level - 1] + (mx + ox[j])) * stride + ch];//////TODO ??
+							int a8 = data[level - 1][((my + oy[j]) * levelWidth[level - 1] + (mx + ox[j])) * stride + ch] * weight[j];
+							colorSum[ch] += data[level - 1][((my + oy[j]) * levelWidth[level - 1] + (mx + ox[j])) * stride + ch] * weight[j];//////TODO ??
+						}
+						weightSum += weight[j];
+					}
+					for (int ch = 0; ch < stride; ch++) {
+						data[level][i * stride + ch] = colorSum[ch] / weightSum;
+					}
+					//memcpy(&data[level][i * stride], &data[level - 1][(i % levelHeight[level] * 2 + i / levelHeight[level] * 2 * levelHeight[level - 1]) * stride], sizeof(T) * stride);
 				}
-				weightSum += weight[j];
+				//char fn[100];
+				//sprintf(fn, "p%d.png", tid++);
+				//writeArrayToFilePNG(fn, data[level], levelWidth[level], levelHeight[level], stride);
 			}
-			for (int ch = 0; ch < stride; ch++) {
-				data[level][i * stride + ch] = colorSum[ch] / weightSum;
-			}
-			//memcpy(&data[level][i * stride], &data[level - 1][(i % levelHeight[level] * 2 + i / levelHeight[level] * 2 * levelHeight[level - 1]) * stride], sizeof(T) * stride);
+			success = true;
 		}
-		//char fn[100];
-		//sprintf(fn, "p%d.png", tid++);
-		//writeArrayToFilePNG(fn, data[level], levelWidth[level], levelHeight[level], stride);
+		catch (...) {
+			exit(0);
+			printf("ComputePyramids Error Wait 2 sec\n");
+			Sleep(2000);
+		}
 	}
 }
 
@@ -436,6 +454,7 @@ void RenderPanel::CalculateResult()
 	unsigned char* ap[MAX_LEVEL];
 	unsigned char* bp[MAX_LEVEL];
 	int* st[MAX_LEVEL];
+	float* sd[MAX_LEVEL];
 	//double* fv[MAX_LEVEL];
 
 	// Get Image
@@ -456,25 +475,27 @@ void RenderPanel::CalculateResult()
 	// Compute Features
 	levelSize[0] = fboSize;
 	st[0] = new int[levelSize[0] * levelSize[0]];
+	sd[0] = new float[levelSize[0] * levelSize[0]];
 	for (int level = 1; level < MAX_LEVEL; level++) {
 		levelSize[level] = levelSize[level - 1] / 2;
 		//printf("levelSize[%d]: %d\n", level, levelSize[level]);
 		st[level] = new int[levelSize[level] * levelSize[level]];
+		sd[level] = new float[levelSize[level] * levelSize[level]];
 		//fv[level] = new double[levelSize[level] * levelSize[level] * 4];
 	}
 
 	// Compute Gaussian pyramids
 	//printf("Compute Gaussian pyramids%p, %p, %p, %p\n", a[0], a[1], a[2], a[3]);
-	ComputePyramids<unsigned char>(a[0], 3, fboSize, fboSize, MAX_LEVEL);
-	ComputePyramids<unsigned char>(a[1], 3, fboSize, fboSize, MAX_LEVEL);
-	ComputePyramids<unsigned char>(a[2], 3, fboSize, fboSize, MAX_LEVEL);
-	ComputePyramids<unsigned char>(a[3], 3, fboSize, fboSize, MAX_LEVEL);
-	ComputePyramids<unsigned char>(b[0], 3, fboSize, fboSize, MAX_LEVEL);
-	ComputePyramids<unsigned char>(b[1], 3, fboSize, fboSize, MAX_LEVEL);
-	ComputePyramids<unsigned char>(b[2], 3, fboSize, fboSize, MAX_LEVEL);
-	ComputePyramids<unsigned char>(b[3], 3, fboSize, fboSize, MAX_LEVEL);
-	ComputePyramids<unsigned char>(ap, 3, fboSize, fboSize, MAX_LEVEL);
-	ComputePyramids<unsigned char>(bp, 3, fboSize, fboSize, MAX_LEVEL);
+	ComputePyramids(a[0], 3, fboSize, fboSize, MAX_LEVEL);
+	ComputePyramids(a[1], 3, fboSize, fboSize, MAX_LEVEL);
+	ComputePyramids(a[2], 3, fboSize, fboSize, MAX_LEVEL);
+	ComputePyramids(a[3], 3, fboSize, fboSize, MAX_LEVEL);
+	ComputePyramids(b[0], 3, fboSize, fboSize, MAX_LEVEL);
+	ComputePyramids(b[1], 3, fboSize, fboSize, MAX_LEVEL);
+	ComputePyramids(b[2], 3, fboSize, fboSize, MAX_LEVEL);
+	ComputePyramids(b[3], 3, fboSize, fboSize, MAX_LEVEL);
+	ComputePyramids(ap, 3, fboSize, fboSize, MAX_LEVEL);
+	ComputePyramids(bp, 3, fboSize, fboSize, MAX_LEVEL);
 	//ComputePyramids<double>(fv, 1, fboSize, fboSize, MAX_LEVEL);
 
 	// Compute Result
@@ -589,71 +610,126 @@ void RenderPanel::CalculateResult()
 				}
 			}
 		}
-
+		bool* cp = new bool[levelSize[level] * levelSize[level]];
+		int *axmap = new int[levelSize[level]];
+		int *aymap = new int[levelSize[level]];
+		for (int i = 0; i < levelSize[level]; axmap[i++] = aymap[i++] = i);
 		for (int opti = 0; opti < OPTI_ITER; opti++) {
 			printf("Optimization iterations %d\n", opti);
 			// NNF find
-			for (int by = 0; by < levelSize[level]; ++by) {
-				for (int bx = 0; bx < levelSize[level]; ++bx) {
-					int minIndex; // close pixel index in a
-					double minDis = DBL_MAX; // close distance in a
-					for (int ay = by - levelSize[level] / 4; ay < by + levelSize[level] / 4; ++ay) {
-						for (int ax = bx - levelSize[level] / 4; ax < bx + levelSize[level] / 4; ++ax) {
-							if (ax < 0 || ax >= levelSize[level] || ay < 0 || ay >= levelSize[level])
-								continue;
-					//for (int ay = 0; ay < levelSize[level]; ++ay) {
-					//	for (int ax = 0; ax < levelSize[level]; ++ax) {
-							double f[5], fl = 0; // distance of pixel in b
-							int pCount = 0; // valid pixel in range
-							// evaluate at 5x5 range
-							for (int offsetY = -2; offsetY <= 2; ++offsetY) {
-								for (int offsetX = -2; offsetX <= 2; ++offsetX) {
-									// compuate pixel position in a and b
-									int oax = offsetX + ax, oay = offsetY + ay;
-									int obx = offsetX + bx, oby = offsetY + by;
-									// check pixel is in the range of image
-									if (oax < 0 || oax >= levelSize[level] ||
-										oay < 0 || oay >= levelSize[level] ||
-										obx < 0 || obx >= levelSize[level] ||
-										oby < 0 || oby >= levelSize[level])
-										continue;
-									int oai = oay * levelSize[level] + oax;
-									int obi = oby * levelSize[level] + obx;
-									// compute distance of image 0(full color), image 1(ambient), image 2(diffuse), image 3(specular)
-									f[0] = ColorDiff(&a[0][level][oai * 3], &b[0][level][obi * 3]);
-									f[1] = ColorDiff(&a[1][level][oai * 3], &b[1][level][obi * 3]);
-									f[2] = ColorDiff(&a[2][level][oai * 3], &b[2][level][obi * 3]);
-									f[3] = ColorDiff(&a[3][level][oai * 3], &b[3][level][obi * 3]);
-									f[4] = ColorDiff(&ap[level][oai * 3], &bp[level][obi * 3]);
-									fl += VectorLength(f, 5);
-									pCount++;
+			int cpi = 0;
+			std::fill(st[level], st[level] + levelSize[level] * levelSize[level] + 1, -1);
+			while (cpi < levelSize[level] * levelSize[level]) {
+				std::random_shuffle(axmap, axmap + levelSize[level]);
+				std::random_shuffle(aymap, aymap + levelSize[level]);
+				std::fill(sd[level], sd[level] + levelSize[level] * levelSize[level] + 1, 0);
+				for (int raway = 0; raway <levelSize[level]; ++raway) {
+					for (int rawax = 0; rawax < levelSize[level]; ++rawax) {
+						int ax = axmap[rawax], ay = aymap[raway];
+						int ai = ay * levelSize[level] + ax;
+						int minIndex = INT_MAX; // close pixel index in a
+						double minDis = DBL_MAX; // close distance in a
+						for (int by = 0; by < levelSize[level]; ++by) {
+							for (int bx = 0; bx < levelSize[level]; ++bx) {
+								int bi = by * levelSize[level] + bx;
+								if (st[level][bi] != -1)
+									continue;
+								double f[5], fl = 0; // distance of pixel in b
+								int pCount = 0; // valid pixel in range
+												// evaluate at 5x5 range
+								for (int offsetY = -2; offsetY <= 2; ++offsetY) {
+									for (int offsetX = -2; offsetX <= 2; ++offsetX) {
+										// compuate pixel position in a and b
+										int oax = offsetX + ax, oay = offsetY + ay;
+										int obx = offsetX + bx, oby = offsetY + by;
+										// check pixel is in the range of image
+										if (oax < 0 || oax >= levelSize[level] ||
+											oay < 0 || oay >= levelSize[level] ||
+											obx < 0 || obx >= levelSize[level] ||
+											oby < 0 || oby >= levelSize[level])
+											continue;
+										int oai = oay * levelSize[level] + oax;
+										int obi = oby * levelSize[level] + obx;
+										// compute distance of image 0(full color), image 1(ambient), image 2(diffuse), image 3(specular)
+										f[0] = ColorDiff(&a[0][level][oai * 3], &b[0][level][obi * 3]);
+										f[1] = ColorDiff(&a[1][level][oai * 3], &b[1][level][obi * 3]);
+										f[2] = ColorDiff(&a[2][level][oai * 3], &b[2][level][obi * 3]);
+										f[3] = ColorDiff(&a[3][level][oai * 3], &b[3][level][obi * 3]);
+										f[4] = ColorDiff(&ap[level][oai * 3], &bp[level][obi * 3]);
+										fl += VectorLength(f, 5);
+										pCount++;
+									}
+								}
+								fl /= pCount;
+								if (fl < minDis || fl - minDis < 1e-10 && rand() < RAND_MAX / 100) {
+									minDis = fl;
+									minIndex = bi;
+								}
+								//debugFile << "(" << ax << ", " << ay << "): " << fl << std::endl;
+							}
+						}
+						if (minIndex != INT_MAX) {
+							st[level][minIndex] = ai;
+							sd[level][minIndex] = minDis;
+							cpi++;
+							int minX = (double)(minIndex % levelSize[level]) / levelSize[level] * fboSize;
+							int minY = (double)(minIndex / levelSize[level]) / levelSize[level] * fboSize;
+							int maxX = (double)((minIndex % levelSize[level]) + 1) / levelSize[level] * fboSize;
+							int maxY = (double)((minIndex / levelSize[level]) + 1) / levelSize[level] * fboSize;
+							for (int ry = minY; ry < maxY; ry++) {
+								for (int rx = minX; rx < maxX; rx++) {
+									memcpy(&resultData[(ry * fboSize + rx) * 3], &ap[level][st[level][minIndex] * 3], sizeof(unsigned char) * 3);
 								}
 							}
-							fl /= pCount;
-							if (fl < minDis || fl - minDis < 1e-10 && rand() < RAND_MAX / 100) {
-								minDis = fl;
-								minIndex = ay * levelSize[level] + ax;
-							}
-							//debugFile << "(" << ax << ", " << ay << "): " << fl << std::endl;
 						}
 					}
-					//debugFile << minDis << std::endl;
-					// write result to bp
-					st[level][by * levelSize[level] + bx] = minIndex;
-					//memcpy(&bp[level][bi * 3], &ap[level][minIndex * 3], sizeof(unsigned char) * 3);
-					// fill result to resultData for show
-					int minX = (double)bx / levelSize[level] * fboSize;
-					int minY = (double)by / levelSize[level] * fboSize;
-					int maxX = (double)(bx + 1) / levelSize[level] * fboSize;
-					int maxY = (double)(by + 1) / levelSize[level] * fboSize;
-					for (int ry = minY; ry < maxY; ry++) {
-						for (int rx = minX; rx < maxX; rx++) {
-							memcpy(&resultData[(ry * fboSize + rx) * 3], &ap[level][minIndex * 3], sizeof(unsigned char) * 3);
+				}
+				float disAvg = 0;
+				int pixCount = 0;
+				std::vector<float> disSort;
+				disSort.clear();
+				for (int i = 0; i < levelSize[level] * levelSize[level]; i++) {
+					if (sd[level][i] > 0) {
+						disAvg += sd[level][i];
+						disSort.push_back(sd[level][i]);
+						pixCount++;
+					}
+				}
+				disAvg /= pixCount;
+				std::sort(disSort.begin(), disSort.end());
+				disAvg = disSort[pixCount * 0.5];
+				for (int i = 0; i < levelSize[level] * levelSize[level]; i++) {
+					if (sd[level][i] > disAvg && pixCount > 1) {
+						st[level][i] = -1;
+						cpi--;
+						int minX = (double)(i % levelSize[level]) / levelSize[level] * fboSize;
+						int minY = (double)(i / levelSize[level]) / levelSize[level] * fboSize;
+						int maxX = (double)((i % levelSize[level]) + 1) / levelSize[level] * fboSize;
+						int maxY = (double)((i / levelSize[level]) + 1) / levelSize[level] * fboSize;
+						for (int ry = minY; ry < maxY; ry++) {
+							for (int rx = minX; rx < maxX; rx++) {
+								unsigned char b[3] = {};
+								memcpy(&resultData[(ry * fboSize + rx) * 3], b, sizeof(unsigned char) * 3);
+							}
+						}
+					}
+					else if (sd[level][i] > 0){
+						// fill result to resultData for show
+						int minX = (double)(i % levelSize[level]) / levelSize[level] * fboSize;
+						int minY = (double)(i / levelSize[level]) / levelSize[level] * fboSize;
+						int maxX = (double)((i % levelSize[level]) + 1) / levelSize[level] * fboSize;
+						int maxY = (double)((i / levelSize[level]) + 1) / levelSize[level] * fboSize;
+						for (int ry = minY; ry < maxY; ry++) {
+							for (int rx = minX; rx < maxX; rx++) {
+								memcpy(&resultData[(ry * fboSize + rx) * 3], &ap[level][st[level][i] * 3], sizeof(unsigned char) * 3);
+							}
 						}
 					}
 				}
 			}
 
+			//if (opti + 1 == OPTI_ITER)
+			//	continue;
 			// Average color
 			for (int by = 0; by < levelSize[level]; ++by) {
 				for (int bx = 0; bx < levelSize[level]; ++bx) {
@@ -679,9 +755,26 @@ void RenderPanel::CalculateResult()
 							colorCount++;
 						}
 					}
-					bp[level][bi * 3 + 0] = colorSumR / colorCount;
-					bp[level][bi * 3 + 1] = colorSumG / colorCount;
-					bp[level][bi * 3 + 2] = colorSumB / colorCount;
+					if (colorCount > 0) {
+						bp[level][bi * 3 + 0] = colorSumR / colorCount;
+						bp[level][bi * 3 + 1] = colorSumG / colorCount;
+						bp[level][bi * 3 + 2] = colorSumB / colorCount;
+					}
+					else {
+						for (int offsetY = -2; offsetY <= 2; ++offsetY) {
+							for (int offsetX = -2; offsetX <= 2; ++offsetX) {
+								int obx = offsetX + bx, oby = offsetY + by;
+								if (obx < 0 || obx >= levelSize[level] || oby < 0 || oby >= levelSize[level])
+									continue;
+								int obi = oby * levelSize[level] + obx;
+								int sti = st[level][obi];
+								int oax = st[level][obi] % levelSize[level] - offsetX, oay = st[level][obi] / levelSize[level] - offsetY;
+								if (oax < 0 || oax >= levelSize[level] || oay < 0 || oay >= levelSize[level])
+									continue;
+								int oai = oax + oay * levelSize[level];
+							}
+						}
+					}
 					// fill result to resultData for show
 					int minX = (double)bx / levelSize[level] * fboSize;
 					int minY = (double)by / levelSize[level] * fboSize;
